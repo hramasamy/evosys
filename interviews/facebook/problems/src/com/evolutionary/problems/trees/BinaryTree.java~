@@ -1,0 +1,313 @@
+package com.evolutionary.problems.tress;
+
+import java.util.*;
+
+public class BinaryTree {
+
+    Node root ;
+    Node newRoot ;
+
+    BinaryTree () {
+	root  = null ;
+    }
+
+    BinaryTree (int data) {
+	root = new Node(data) ;
+    }
+
+    public Node getRoot() {
+	return root;
+    }
+
+    public Node getNewRoot() {
+        return newRoot;
+    }
+
+    public void setNewRoot(Node newRoot) {
+        this.newRoot = newRoot;
+    }
+
+    public void setRoot(Node root) {
+	this.root = root;
+    }
+
+    public void insertRecData (int data) {
+
+	Node n = this.getRoot() ;
+	if (n == null) {
+	    this.setRoot(new Node(data));
+	    return ;
+	}
+
+	insertRecTree(n, data) ;
+	return ;
+
+    }
+
+    public Node insertRecTree(Node ins, int data) {
+
+	if (ins == null) {
+	    ins = new Node(data) ;
+	    return ins ;
+	}
+
+	if (ins.getData() < data) {
+	    ins.setRight(insertRecTree(ins.getRight(), data));
+	}
+	else {
+	    ins.setLeft(insertRecTree(ins.getLeft(), data));
+	}
+	return ins ;
+
+    }
+
+    public List<Integer> preOrder() {
+
+	List <Integer> res = new ArrayList<Integer>() ;
+	Node inorder = this.getRoot() ;
+
+	if (inorder == null ) {
+	    return null ;
+	}
+
+	Stack<Node> stack = new Stack<Node> () ;
+	stack.push(inorder) ;
+	while (!stack.isEmpty()) {
+	    Node n = stack.pop() ;
+	    res.add(n.getData()) ;
+	    if (n.getRight() != null) {
+		stack.push(n.getRight());
+	    }
+	    if (n.getLeft() != null) {
+		stack.push(n.getLeft());
+	    }
+	}
+	return res ;
+    }
+
+    void insertData (int data) {
+
+	if (root == null) {
+	    this.setRoot(new Node(data));
+	    return ;
+	}
+	Node n = this.getRoot() ;
+
+	boolean notInserted = true ;
+
+	while (notInserted) {
+	    if (n == null) {
+		n = new Node(data) ;
+		notInserted = false ;
+		break ;
+	    }
+	    if(n.getData() < data) {
+		if (n.getRight() == null) {
+		    n.setRight(new Node(data));
+		    break ;
+		}
+		else {
+		    n = n.getRight();
+		}
+	    }
+	    else {
+		if (n.getLeft() == null){
+		    n.setLeft(new Node(data));
+		    break ;
+		}
+		else {
+		    n = n.getLeft();
+		}
+	    }
+	}
+
+    }
+
+    void printTree () {
+	Node n = this.getRoot() ;
+
+	Queue<Node> walks = new LinkedList<Node>() ;
+	int count = 0 ;
+	int newcount = 0 ;
+	walks.add(n) ;
+	++count ;
+	while (count > 0 || newcount > 0) {
+
+	    if (count > 0) {
+		Node prnode = walks.remove();
+		System.out.print(prnode.getData() + " ");
+		--count;
+		if (prnode.getLeft() != null) {
+		    walks.add(prnode.getLeft());
+		    ++newcount;
+		}
+		if (prnode.getRight() != null) {
+		    walks.add(prnode.getRight());
+		    ++newcount ;
+		}
+	    }
+	    else {
+		System.out.println();
+		count = newcount ;
+		newcount = 0 ;
+	    }
+	}
+
+    }
+
+    public List<Integer>  inOrder () {
+
+	Stack<Node> stack = new Stack<Node>() ;
+	List<Integer> list = new ArrayList<Integer>() ;
+	Node n = this.getRoot() ;
+	if (n == null) return null ;
+
+	while (!stack.isEmpty() || n != null) {
+
+	    if (n != null) {
+		stack.push(n) ;
+		n = n.getLeft() ;
+	    }
+	    else {
+		Node r = stack.pop();
+		list.add(r.getData()) ;
+		n = r.getRight() ;
+	    }
+	}
+	return list ;
+    }
+
+    public List<Integer>  postOrder () {
+
+	Stack<Node> stack = new Stack<Node>() ;
+	List<Integer> list = new ArrayList<Integer>() ;
+	Node n = this.getRoot() ;
+	if (n == null) return null ;
+	stack.push(n) ;
+	while (!stack.isEmpty()) {
+	    Node p = stack.peek() ;
+	    if (p.getLeft() == null  &&  p.getRight() == null) {
+		Node r = stack.pop(); ;
+		list.add(r.getData()) ;
+	    }
+	    else {
+		if (p.getRight()!= null ) {
+		    stack.push(p.getRight()) ;
+		    p.setRight(null);
+		}
+		if (p.getLeft() != null) {
+		    stack.push(p.getLeft()) ;
+		    p.setLeft(null);
+		}
+
+	    }
+	}
+	return list ;
+    }
+
+    public void invertTree () {
+
+        Node n = this.getRoot();
+        if (n == null) return;
+        Queue<Node> queue = new LinkedList<Node>();
+
+        queue.add(n);
+
+        while (!queue.isEmpty()) {
+            Node r = queue.poll();
+            if (r.getLeft() != null) {
+                queue.add(r.getLeft());
+            }
+            if (r.getRight() != null) {
+                queue.add(r.getRight());
+            }
+            Node temp = r.getRight();
+            r.setRight(r.getLeft());
+            r.setLeft(temp);
+        }
+    }
+
+    public void buildTreeInPre () {
+
+	List<Integer>  listIn = this.inOrder() ;
+	List<Integer> listPre = this.preOrder() ;
+
+	int inStart = 0 ;
+	int inEnd = listIn.size() ;
+	int preStart = 0 ;
+	int preEnd = listPre.size() ;
+
+
+
+
+
+    }
+
+    public Node newTree (int [] inArr, int inStart, int inEnd,
+                         int[] preArr, int preStart, int preEnd) {
+
+        if (inStart > inEnd || preStart > preEnd) {
+            return null ;
+        }
+
+        int value = preArr[inStart] ;
+        Node newTree = new Node(value) ;
+
+        int k = 0 ;
+
+        for (int i = 0 ; i < inEnd ; i++) {
+            if (inArr[i] == value) {
+                k = i ;
+                break ;
+            }
+        }
+
+        newTree.setLeft(newTree(inArr, inStart, k-1, preArr, preStart+1,
+                preStart +k -inStart
+                ));
+        newTree.setLeft(newTree(inArr, k+1, inEnd, preArr, preStart+k-inStart+1,
+                preEnd
+        ));
+
+        return newTree ;
+    }
+    
+    
+    
+    public static void main (String [] args) {
+	BinaryTree tree = new BinaryTree() ;
+	tree.insertRecData(100);
+	tree.insertData(90);
+	tree.insertRecData(85);
+	tree.insertData(95);
+	tree.insertRecData(110);
+	tree.insertData(105);
+	tree.insertRecData(115);
+	tree.printTree() ;
+	List <Integer> lis = tree.preOrder() ;
+	System.out.println();
+	for (int val : lis) {
+	    System.out.print (val + " ") ;
+	}
+	System.out.println();
+	tree.printTree();
+	lis = tree.inOrder() ;
+	System.out.println();
+	for (int val : lis) {
+	    System.out.print (val + " ") ;
+	}
+	System.out.println();
+	tree.printTree();
+	/*
+	  lis = tree.postOrder() ;
+	  System.out.println();
+	  for (int val : lis) {
+	  System.out.print (val + " ") ;
+	  }
+	  System.out.println();
+	*/
+	tree.printTree();
+	tree.invertTree();
+	tree.printTree() ;
+    }
+}

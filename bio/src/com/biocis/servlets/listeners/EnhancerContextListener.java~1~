@@ -1,0 +1,89 @@
+
+package com.biocis.servlets.listeners;
+
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextAttributeEvent;
+import javax.servlet.ServletContextAttributeListener;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+
+
+/**
+ *
+ * @author Sanjeev K Mishra
+ * @version $Revision: .1 $ $Date: 2004/12/10 $
+ */
+
+public final class EnhancerContextListener implements ServletContextListener {
+
+  private SbsContextListenerSupport contextListenerSupport;
+
+  /**
+   * The servlet context with which we are associated.
+   */
+  private ServletContext context = null;
+  /**
+   * Record the fact that this web application has been destroyed.
+   *
+   * @param event The servlet context event
+   */
+  public void contextDestroyed(ServletContextEvent event) {
+
+    log("contextDestroyed()");
+    this.context = null;
+
+  }
+
+
+  /**
+   * Record the fact that this web application has been initialized.
+   *
+   * @param event The servlet context event
+   */
+  public void contextInitialized(ServletContextEvent event) {
+
+    this.context = event.getServletContext();
+    log("contextInitialized()");
+
+  }
+
+
+  // -------------------------------------------------------- Private Methods
+
+
+  /**
+   * Log a message to the servlet context application log.
+   *
+   * @param message Message to be logged
+   */
+  private void log(String message) {
+
+    if (context != null)
+      context.log("EnhancerContextListener: " + message);
+    else
+      System.out.println("EnhancerContextListener: " + message);
+
+  }
+
+
+  /**
+   * Log a message and associated exception to the servlet context
+   * application log.
+   *
+   * @param message Message to be logged
+   * @param throwable Exception to be logged
+   */
+  private void log(String message, Throwable throwable) {
+
+    if (context != null)
+      context.log("EnhancerContextListener: " + message, throwable);
+    else {
+      System.out.println("EnhancerContextListener: " + message);
+      throwable.printStackTrace(System.out);
+    }
+
+  }
+
+
+}

@@ -1,0 +1,250 @@
+<?xml version="1.0"?>
+<project name="bioscope" default="compile" basedir=".">
+
+  <path id="classpath.path">
+   <pathelement location="${classes}"/>
+   <fileset dir="dependencies">
+    <include name="*.jar"/>
+    <include name="util/*.class"/>
+   </fileset>
+   <pathelement location="dependencies/junit.jar"/>
+   <pathelement location="dependencies/httpunit.jar"/>
+   <pathelement location="dependencies/xerces.jar"/>
+  </path>
+
+ <target name="init">
+  <tstamp/>
+
+   <property name="project" value="${ant.project.name}"/>
+
+  <property name="version" value="beta"/>
+  <property name="now" value="${DSTAMP}-${TSTAMP}"/>
+
+  <property name="build" location="build"/>
+  <property name="classes" location="${build}/classes"/> 
+  <property name="httpunit" location="/usr/local/httpunit"/>
+  <property name="doc" location="${build}/doc"/> 
+  <property name="webapp" location="${build}/webapps"/> 
+  <property name="webapp.rsync" location="${webapp}/BioScope"/>
+  <property name="tarball.tar" value="${project}-${now}.tar"/>  
+  <property name="tarball.tar.gz" value="${tarball.tar}.gz"/>  
+  <property name="test" location="test"/>
+  <property name="src" location="src"/>
+  <property name="lib"  value="lib"/>
+  <property name="jarname" value="BioScope.jar"/>
+
+  <property name="web.xml" value="conf/web.xml"/>
+  <property name="struts-config.xml" value="conf/struts-config.xml"/>
+  <property name="index.html" value="root/index.html"/>
+  <property name="default.jsp" value="root/default.jsp"/>
+  <property name="web.xml.live" value="conf/live-web.xml"/>
+
+  <property name="classpath" 
+value="${classes}:${httpunit}/jars/junit.jar:${httpunit}/jars/purple.jar:${httpunit}/jars/servlet.jar:${httpunit}/lib/httpunit.jar:${httpunit}/jars/Tidy.jar:/xerces.jar:${httpunit}/jars/junit.jar:/usr/local/tomcat/common/lib/servlet-api.jar:/usr/local/tomcat/common/lib:/usr/local/tomcat/webapps/servlets-examples/WEB-INF/classes:dependencies"/>
+
+  <mkdir dir="${build}"/>
+  <mkdir dir="${classes}"/>
+  <mkdir dir="${doc}"/>
+  <mkdir dir="${webapp}"/>
+  <mkdir dir="${webapp}/BioScope"/>
+  <mkdir dir="${webapp}/BioScope/WEB-INF"/>
+  <mkdir dir="${webapp}/BioScope/WEB-INF/classes"/>
+  <mkdir dir="${webapp}/BioScope/WEB-INF/lib"/>
+  <mkdir dir="${webapp}/BioScope/sites"/>
+  <mkdir dir="${webapp}/BioScope/jsps"/>
+  <mkdir dir="${webapp}/BioScope/resources"/>
+  <mkdir dir="${webapp}/BioScope/conf"/>
+  <mkdir dir="${webapp}/BioScope/views"/>
+  <mkdir dir="${test}"/>
+
+  <!-- webapp filtering - splice version etc. into web files -->
+  <filter token="project" value="${project}"/>
+  <filter token="version" value="${version}"/> 
+  <filter token="date" value="${TODAY}"/>
+  <filter token="now" value="${now}"/>
+  <filter token="tarball" value="${tarball.tar.gz}"/>
+
+  <!-- deployment properties -->
+  <property name="live.user" value="alex"/>
+  <property name="live.server" value="www.purpletech.com"/>
+  <property name="live.tomcat" value="/usr/local/java/tomcat"/>
+  <property name="live.webapps" value="/opt/webapps"/>
+  <property name="rsync" value="rsync"/>  <!-- local location of rsync 
+-->
+  <property name="ssh" value="ssh"/>  <!-- local location of rsync -->
+
+ </target>
+
+ <target name="clean" depends="init">
+  <delete dir="${test}"/>
+  <delete dir="${build}"/>
+ </target>
+
+ <target name="compile" depends="init">
+  <javac srcdir="${src}" destdir="${classes}" deprecation="on" 
+debug="on">
+   <classpath><path refid="classpath.path"/>
+  <pathelement path="${classpath}"/>
+</classpath>
+  </javac>
+ </target>
+
+ <target name="testprep" depends="init">
+  <copy todir="${test}/polls">
+   <fileset dir="polls" includes="**"/>
+  </copy>
+ </target>
+
+ <target name="junittest" depends="init,compile,testprep">
+  <junit printsummary="on" fork="yes" failureproperty="testfailed">
+   <classpath>
+    <pathelement path="${classpath}"/>
+   </classpath>
+   <jvmarg value="-Djava.compiler=NONE"/>
+   <formatter type="plain"/>
+   <batchtest todir="${test}">
+    <fileset dir="${src}">
+     <include name="**/AllTests.java"/>
+    </fileset>
+   </batchtest>
+  </junit>
+ </target>
+
+ <target name="javatest" depends="init,compile,testprep">
+  <java classname="junit.textui.TestRunner" classpath="${classpath}" 
+fork="yes">
+   <arg value="BioScope.AllTests"/>
+  </java>
+ </target>
+
+ <target name="test" depends="junittest" if="testfailed">
+  <fail message="one or more tests failed"/>
+ </target>
+
+ <target name="testgui" depends="init,compile,testprep">
+  <java classname="junit.awtui.TestRunner" classpath="${classpath}" 
+fork="yes">
+   <arg value="BioScope.AllTests"/>
+  </java>
+ </target>
+
+ <target name="javadoc" depends="init">
+  <javadoc sourcepath="${src}" destdir="${build}/doc" packagenames="com.BioScope.*" classpath="${classpath}"/>
+ </target>
+
+ <target name="dist" depends="init">
+  <tar tarfile="${build}/${tarball.tar}" basedir="." />
+  <gzip zipfile="${build}/${tarball.tar.gz}" 
+src="${build}/${tarball.tar}"/>
+  <delete file="${build}/${tarball.tar}"/>
+ </target>
+ 
+  <target name="jar" depends="compile">
+    <!-- make a jar file -->
+    <jar jarfile="${lib}/${jarname}" basedir="${build}/"/>
+  </target>
+ 
+
+ <target name="webapp" depends="compile,jar">
+  <!-- make the webapp clean, so even files that haven't changed get
+  their filters updated -->
+  <delete dir="${webapp}"/>
+
+  <!-- all web files -->
+  <copy todir="${webapp}" filtering="on">
+   <fileset dir="web" includes="**/*.txt,**/*.html"/>
+  </copy>
+  <copy todir="${webapp}" filtering="off">
+   <fileset dir="web" excludes="**/*.txt,**/*.html"/>
+  </copy>
+
+  <!-- WEB-INF config directory -->
+  <copy todir="${webapp}/BioScope/WEB-INF/lib" >
+  <fileset dir="./lib"/>
+  </copy>
+
+  <copy todir="${webapp}/BioScope/WEB-INF" file="${web.xml}"/>
+
+  <copy todir="${webapp}/BioScope/WEB-INF" file="${struts-config.xml}"/>
+
+  <!-- copy dist tarball -->
+<!--  <copy todir="${webapp}/dev" file="${build}/${tarball.tar.gz}"/>
+-->
+
+  <copy todir="${webapp}/BioScope/views">
+    <fileset dir="./views" excludes="default.jsp" />
+  </copy>
+
+
+  <copy todir="${webapp}/BioScope/" file="${default.jsp}"/>
+
+  <copy todir="${webapp}/BioScope/resources">
+    <fileset dir="./resources"/>
+  </copy>
+
+  <copy todir="${webapp}/BioScope/sites">
+    <fileset dir="./sites"/>
+  </copy>
+
+  <copy todir="${webapp}/BioScope/WEB-INF/classes">
+    <fileset dir="./build/classes"/>
+  </copy>
+
+  <copy todir="${webapp}/BioScope/conf">
+    <fileset dir="./conf" excludes="web.xml,struts-config.xml" />
+  </copy>
+
+  <!-- copy javadoc into webapp -->
+  <copy todir="${webapp}/dev/doc">
+   <fileset dir="${build}/doc"/>
+  </copy>
+
+  <!-- also copy the full project - - why not? -->
+  <copy todir="${webapp}/dev/${project}">
+   <fileset dir="." excludes="build/**,test/**"/>
+  </copy>
+
+ </target>
+
+ <target name="war" depends="webapp">
+  <jar jarfile="${build}/${project}.war" basedir="${webapp}"/>
+ </target>
+
+ <target name="deploy-live" depends="webapp">
+  <!-- first, copy the live version of web.xml -->
+  <copy file="${web.xml.live}" 
+tofile="${webapp}/BioScope/WEB-INF/web.xml" overwrite="yes"/>
+  
+  <!-- now, copy all the files -->
+  <property name="line" value=" --rsh=${ssh} -Cavz ${webapp.rsync}/ 
+${live.user}@${live.server}:${live.webapps}/BioScope"/>
+     <echo message="${line}"/>
+  <exec executable="${rsync}">
+      <arg line="${line}"/>
+  </exec>
+
+  <!-- now recopy the old web.xml so the local version still works -->
+  <copy file="${web.xml}" tofile="${webapp}/BioScope/WEB-INF/web.xml" 
+overwrite="yes"/>
+ </target>
+
+ <target name="deploy" depends="webapp,deploy-live"/>
+
+
+ <!-- the restart target won't work if Tomcat binds to port 80, unless
+ you ssh as root, which can be dangerous, so I never use it -->
+
+ <target name="restart" depends="init">
+  <exec executable="${ssh}">
+   <arg line="-l ${live.user} ${live.server} 
+${live.tomcat}/bin/shutdown.sh"/>
+  </exec>
+  <exec executable="${ssh}">
+   <arg line="-l ${live.user} ${live.server} 
+${live.tomcat}/bin/startup.sh"/>
+  </exec>
+ </target>
+
+</project>
+
+       

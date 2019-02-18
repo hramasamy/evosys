@@ -1,0 +1,24 @@
+		<table width="100%">
+			<tr>
+				<td width="100%">
+		
+					<table id="sbsFooterTable" width="100%">
+						<tr>
+							<td width="70%" align="left"><font size="1" face="Arial">Copyright&nbsp;&copy;
+                                          2004 BioCis Software Inc.</font></td>
+							<td align="center"><font size="1" face="Arial"><a id="sbsFooterLink" href="<c:url value="/"/>">Home</font></td>
+							<td align="center"><font size="1" face="Arial">Products</font></td>
+							<td align="center"><font size="1"><font face="Arial">About
+                                          Us</font></font></td>
+							<td align="center"><font size="1" face="Arial">News</font></td>
+							<td align="center" nowrap><font size="1" face="Arial">Case
+                                          Studies</font></td>
+							<td align="center" nowrap><font size="1" face="Arial">Contact Us</font></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>
+

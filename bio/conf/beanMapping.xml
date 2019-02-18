@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bean-mapping>
+	<mapping>
+	<name>firstSearch</name>
+	<class>com.biocis.beans.SearchBean</class>
+	<data-source>
+		<type>file</type>
+		<name>/usr/local/apache/htdocs/gbrowse/database/usr/sanjeev/enhancer/firstSearch.xml</name>
+	</data-source>
+	</mapping>
+</bean-mapping>

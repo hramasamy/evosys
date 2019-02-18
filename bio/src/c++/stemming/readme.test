@@ -1,0 +1,452 @@
+
+
+Welcome Nice Stemmer Nice Stemmer origin develop 
+class project programme course taught losee 
+School Information Library Science unc-ch 
+revision origin version 
+robust flexiable room improvement 
+
+Nice Stemmer consist stemmers simple plural remover porter 
+stemmer krovetz Inflectional Stemmer combination Stemmer 
+activate passe appropriate argument 
+
+find little inform Nice Stemmer please see 
+
+
+test Nice Stemmer install please see 
+
+
+Yang 
+
+
+rights reserve 
+
+
+
+Nice Stemmer Installation 
+
+detarre gunzippe nstem.tar file 
+type nsetup follow instruct 
+
+Usage Note 
+
+nstem interact stemmer allow protect word 
+handle simple structured file 
+
+nstemb batch stemmer option sentence recognition 
+
+
+
+
+
+
+
+script 
+
+
+
+
+
+Name nsetup 
+Author Kiduk Yang 
+modifie 
+
+Description NICE stemmer startup script 
+Compile Nice Stemmer Module 
+display menu initialize program parameter 
+
+Module compile 
+nmenu nice stemmer menu 
+nstem interact nice stemmer 
+nstemb batch nice stemmer 
+makelist binary stopword search file 
+exception word search file need nstem module 
+makelist2 tab-binary dictionary search file 
+combo interact stemmer comparison module 
+
+NOTE origin develop INLS team project 
+
+
+
+
+Name nmenu 
+Author Kiduk Yang 
+
+Description display Nice Stemmer startup menu 
+
+NOTE call nsetup script 
+
+
+
+
+Name nclean 
+Author Kiduk Yang 
+
+Description NICE stemmer cleanup script 
+delete compile code nice stemmer 
+
+
+
+
+
+MAIN module 
+
+
+
+
+
+Name class.h 
+Author Kiduk Yang 
+modifie 
+
+Description class declaration 
+
+NOTE call krovetz.h combo.h 
+
+
+
+
+Name combo.h 
+Author Kiduk Yang 
+
+Description combination stemmer 
+execute stemmers 
+select shortest result stem dictionary 
+
+input word stem 
+dictionary search file 
+excepton list 
+output stem word 
+
+NOTE experiment algorithm develop 
+
+
+
+
+Name define.h 
+Author Kiduk Yang 
+modifie 
+
+Description constant declaration 
+declare global constant statments 
+
+NOTE change PMAP system map 
+
+
+
+
+Name display.h 
+Author Kiduk Yang 
+
+Description screen display module USER interface error message 
+showmenu display menu 
+chk_ln check valid menu select 
+EXIT exit program exit condition met Rong Tong 
+reprompt display input error message repromts input 
+fname_err display filename error message reprompt 
+fullpath check possible map valid full path 
+openfile check valid filename reprompts need 
+recursive function max recursion set MXER 
+fin_err display file open error message 
+
+NOTE 
+
+
+
+
+Name findw0.h 
+Author Wooseob Jeong 
+
+Description Look protect word list 
+return 
+return 
+
+
+
+
+Name findw.h 
+Author Kiduk Yang 
+
+Description 
+search given word random access list 
+return 
+use binary search 
+
+input word look 
+random access search list 
+output 
+
+NOTE random access search file create makelist.cc 
+
+
+
+
+Name findw2.h 
+Author Danqi Song 
+modifie Kiduk Yang 
+
+Description 
+search given word random access list 
+return 
+use tab-binary search 
+option provide 
+use simple binary search opt 
+use tab-binary search opt 
+
+input word look 
+random access search list 
+output 
+
+NOTE random access search file create makelist2.cc 
+
+
+
+
+Name krovetz.h 
+Author Woosub Jeong 
+Modifie Kiduk Yang 
+
+Description implement Krovetz inflect stemmer 
+
+input word stem 
+output stem word 
+
+NOTE 
+
+
+
+
+Name makelist0.h 
+Author Woosub Jeoung 
+
+Description 
+word file interact write 
+word input user default file 
+
+input input parameter function 
+command line input words/strings user function 
+output default word file reference pwfile0 statement 
+
+NOTE create protect word file interact 
+
+
+
+
+Name combo.cc 
+Author Kiduk Yang 
+
+Description combination stemmer 
+execute stemmers 
+select shorte result stem dictionary 
+
+input word stem 
+dictionary search file 
+excepton list 
+output stem word 
+
+NOTE interact combo stemmer 
+
+
+
+
+Name makelist.cc 
+Author Kiduk Yang 
+modifie 
+
+Description create string random access file binary search 
+header portion include file size 
+total number word need binary search 
+create random access file sort word list 
+
+input sort list 
+output random access binary file findw.h 
+
+NOTE Nee run 
+
+
+
+
+Name makelist2.cc 
+Author Danqi Song 
+modifie Kiduk Yang 
+
+Description 
+read word text dictionary file 
+write word binary random access file word tag 
+
+input text file large word list 
+output random access tab binary file findw2.h 
+
+NOTE Nee run 
+
+
+
+
+Name makelists.cc 
+Author Kiduk Yang 
+
+Description 
+create random access file default dictionary stopword 
+exception list 
+
+input dict.dat dictionary text 
+stoplist stopword list text 
+xlist exception list text 
+output ran_dict ran_stoplist ran_xlist 
+
+NOTE run Nice Stemmer 
+
+
+
+
+Name nstem.cc 
+Author Kiduk Yang 
+modifie 
+
+Description stemmer shell 
+Displays User Interface Program description Menu 
+Execute appropriate stemmer base user input 
+
+file stem 
+name output file 
+name file contain word remove default given 
+name file contain word remain untouched option 
+number indicate type file stem 
+letter indicate stemmer algorithm apply 
+input stopword list random access file 
+dictionary random access file 
+exception list random access file 
+output file contain stem input file 
+
+NOTE max word length nice stemmer character 
+
+
+
+
+Name nstemb.cc 
+Author Kiduk Yang 
+modifie 
+modifie 
+
+Description NICE stemmer batch MODE 
+Execute appropriate stemmer command line 
+
+argument letter indicate stemmer algorithm apply 
+name file stem 
+name output file 
+option argument 
+flag activate sentence recognition 
+input stopword list random access file 
+dictionary random access file 
+exception list random access file 
+output file contain stem input file 
+
+note1 command line stemmer large file stem 
+use non-default dictionary stoplist 
+note2 max word length nice stemmer character 
+note3 version stemmer exclude numeric word 
+word start special character 
+word include special-character exception 
+word longer character alphanumeric 
+
+
+
+
+
+Name porter.h 
+Author Woosub Jeong 
+
+Description implement Porter stemmer 
+
+input word stem 
+output stem word 
+
+NOTE 
+
+
+
+
+Name pporter.h 
+Author Danqi Song 
+
+Description Porter stem condition function 
+measure calculate measure given stem 
+stem_v check given stem contain vowel 
+stem_d check given stem end double consonant 
+stem_o check given stem end consonant-vowel 
+consonant sequence final consonant 
+
+
+NOTE call Porter function 
+
+
+
+
+Name simple.h 
+Author Rong Tang 
+
+Description suffix replace function code simple 
+stemmer 
+
+NOTE include suffix replace Simple function 
+
+
+
+
+Name string.h 
+Author Kiduk Yang 
+modifie 
+suffix replace function Rong Tang 
+
+Description miscellenous string manipulation function 
+return suffix 
+replace suffix 
+concat 
+splits delimit 
+return null delimit delimit 
+
+compress lead blank 
+trim trail blank 
+delete special character word boundry 
+execute punct special 
+character word boundry 
+convert number string 
+
+NOTE 
+
+
+
+
+
+miscellaneous file 
+
+
+
+
+
+Name subdict.cc 
+Author Kiduk Yang 
+
+Description 
+subset Oxford Learner Dictionary headword 
+name prefix 
+
+input bigdict.dat dictionary variation word 
+output dict.dat subsette dictionary headword 
+
+NOTE modify differ input/output requirement 
+
+
+
+
+NICE stemmer default file 
+default text file supplie Nice Stemmer 
+
+dict.dat subsette Oxford Learner Online Dictionary 
+stoplist stopword list 
+xlist exception word list 
+
+NOTE 
+
+
+

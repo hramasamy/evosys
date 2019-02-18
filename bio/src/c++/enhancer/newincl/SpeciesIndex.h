@@ -1,0 +1,47 @@
+#ifndef _SPECIES_INDEX
+#define _SPECIES_INDEX
+#include <stdio.h>
+#include <string.h>
+#include <iostream>
+#include <stdlib.h>
+#include <fstream>
+#include <cctype>
+#include <string>
+#include <vector>
+#include <stdbool.h>
+#include <algorithm>
+#include <map>
+#include <Splitter.h>
+
+using namespace std ;
+
+
+class SpeciesIndex  {
+
+  public :
+  SpeciesIndex () 
+    {
+    }
+    
+ SpeciesIndex(char *fname) :filename(fname) 
+    {
+      
+    }
+  
+  void SetFile (char fname[])
+  {
+    filename = fname ;
+  }
+    
+  int ConvertTriplet(const char *trip) ;
+
+  void ReadPositionFile() ;
+  
+  private :
+  string filename ;
+  int TripFreq[64] ;
+} ;
+
+
+#endif
+

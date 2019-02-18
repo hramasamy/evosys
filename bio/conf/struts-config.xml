@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE struts-config PUBLIC "-//Apache Software Foundation//DTD Struts Configuration 1.0//EN"
+          "http://jakarta.apache.org/struts/dtds/struts-config_1_0.dtd">
+<struts-config>
+	<global-forwards>
+		<forward name="login" path="/views/jsps/login.jsp" redirect="true"/>
+		<forward name="userReg" path="/views/jsps/userReg.jsp" redirect="true"/>
+		<forward name="main" path="/default.jsp" redirect="true"/>
+	</global-forwards>
+	<action-mappings>
+		<action path="/authenticate" type="com.sbs.servlets.actions.AuthenticateAction"/>
+		<action path="/logout" type="com.sbs.servlets.actions.LogoutAction"/>
+		<action path="/register" type="com.sbs.servlets.actions.RegisterAction"/>
+		<action path="/updateProfile" type="com.sbs.servlets.actions.UpdateProfileAction"/>
+		<action path="/front" parameter="/views/htmls/front.html" type="org.apache.struts.actions.ForwardAction"/>
+		<action path="/admin" forward="/views/htmls/admin.html"/>
+		<action path="/products" forward="/views/jsps/products.jsp"/>
+		<action path="/company" forward="/views/jsps/underconstruction.jsp"/>
+		<action path="/contact" forward="/views/jsps/underconstruction.jsp"/>
+		<action path="/pricing" forward="/views/jsps/underconstruction.jsp"/>
+		<action path="/views/htmls/docs/introduction" forward="/views/htmls/docs/introduction.htm"/>
+		<action path="/protected/enhancer" forward="/views/jsps/protected/enhancer.jsp"/>
+		<action path="/protected/clustering" forward="/views/jsps/protected/clustering.jsp"/>
+	</action-mappings>
+</struts-config>

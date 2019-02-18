@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+	<head>
+		<title>Biocis: an integrated bioinformatics workbench.</title>
+		<LINK title="hs" href="css/sbs.css" type="text/css" rel="stylesheet">
+			<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+			<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+			<meta name="ProgId" content="FrontPage.Editor.Document">
+	<script id=clientEventHandlersJS language=javascript type="text/javascript" src="js/sbs.js">
+<!--
+
+
+//-->
+</script>
+</head>
+	<body>
+		<table id="sbsDefTable" width="100%" height="616" cellspacing="0">
+			<tr>
+				<td width="20%" height="612"></td>
+				<td id="filledTable" width="60%" height="612" align="center" valign="middle">
+					<form id="sbsForm" name="userRegForm" action="/register.do" onsubmit="return validateUserRegForm(this)"> 
+						<table id="sbsDefTable" width="100%">
+							<tr><td id="sbsSubSection" align="left" width="335">Basic Information</td><td width="509">&nbsp;</td>
+							<tr><td>&nbsp;</td><td>&nbsp;</td>
+							<TR>
+								<TD id="sbsLabel" align="right" width="335">*Email Address&nbsp;</TD>
+								<TD align="left" width="509"><INPUT id="Text1" type="text" size="50" name="email" width="100%" onchange="if(isNotEmpty(this)) {isValidEmail(this)}"></TD>
+							</TR>
+							<TR>
+								<TD id="sbsLabel" align="right" width="335">*Passcode&nbsp;</TD>
+								<TD align="left" width="509"><INPUT id="Text2" type="password" size="50" name="passwd" width="100%" onchange="isNotEmpty(this)"></TD>
+							</TR>
+							<TR>
+								<TD id="sbsLabel" align="right" width="335">*Retype passcode&nbsp;</TD>
+								<TD align="left" width="509"><INPUT id="Password2" type="password" size="50" name="repwd" width="100%" onchange="isNotEmpty(this)"></TD>
+							</TR>
+							<TR>
+								<TD id="sbsLabel" align="right" width="335">*First Name&nbsp;</TD>
+								<TD align="left" width="509"><INPUT id="user_text" type="text" size="50" name="fName" width="100%" onchange="isNotEmpty(this)"></TD>
+							</TR>
+							<TR>
+								<TD id="sbsLabel" align="right" width="335">*Last Name&nbsp;</TD>
+								<TD align="left" width="509"><INPUT id="Text3" type="text" size="50" name="lName" width="100%" onchange="isNotEmpty(this)"></TD>
+							</TR>
+							<TR>
+								<TD id="sbsLabel" align="right" width="335">Nick Name&nbsp;</TD>
+								<TD align="left" width="509"><INPUT id="Text4" type="text" size="50" name="nName" width="100%"></TD>
+							</TR>
+							<tr><td>&nbsp;</td><td>&nbsp;</td>
+							<tr><td id="sbsSubSection" align="left" width="335">Misc. Information</td><td>&nbsp;</td>
+							<tr><td>&nbsp;</td><td>&nbsp;</td>
+							<TR>
+								<TD id="sbsLabel" align="right">*Industry&nbsp;</TD>
+								<TD align="left"><SELECT id="userDropdown" name="industry">
+										<OPTION selected>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</OPTION>
+									</SELECT>
+								</TD>
+							</TR>
+							<TR>
+								<TD id="sbsLabel" align="right">How did you hear about us?&nbsp;</TD>
+								<TD align="left"><INPUT type="text" size="50" name="howFind"></TD>
+							</TR>
+							<tr>
+								<td>&nbsp;</td>
+								<td>&nbsp;</td>
+							</tr>
+							<tr>
+								<td align="right"><INPUT type="checkbox" name="notifyChange">&nbsp;</td>
+								<td id="sbsLabel">Notify me the progress on the site.</td>
+							</tr>
+
+							<tr>
+								<td>&nbsp;</td>
+								<td>&nbsp;</td>
+							</tr>
+							<tr>
+								<td>&nbsp;</td>
+								<td>&nbsp;</td>
+							</tr>
+							<tr>
+								<td>&nbsp;</td>
+								<td><input id="sbsButton" type="submit" name="okBtn" value="OK"/>&nbsp;<input id="sbsButton" type=button name="cancelBtn" value="Cancel" onclick="return onBtnClick(this)"/>&nbsp;<input id="sbsButton" type="reset" name="resetBtn" value="Reset"/></td>
+							</tr>
+						</table>
+					</form>
+				</td>
+				<td width="20%" height="612"></td>
+			</tr>
+		</table>      
+	</body>
+</html>

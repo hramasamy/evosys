@@ -1,0 +1,728 @@
+#include <EnhancerResults.h>
+#include <string.h>
+#include <unistd.h>
+#include <EnhancerDefines.h>
+#include <WebServer.h>
+ #include <boost/filesystem/operations.hpp>
+ #include <boost/filesystem/path.hpp>
+
+extern bool EvaluateConditions(char *, int *) ;
+extern bool PositionOrder (const ResultClass *, const ResultClass *) ;
+extern void GetNearByGenes (long, long, string &, vector <Annotation *> &, Exon &, EnhancerParam &, string&, string &, bool &, string &) ;
+char *color[] = {(char *) "red", (char *) "orange", (char *) "green", (char *) "cyan", (char *) "brown", (char *) "purple", (char *) "black", 
+		 (char *) "violet", (char *) "peachbuf", (char *) "magenta"} ;
+
+void BuildImageMapStr (long , long , long , long , int ,  bool , string & , string &) ;
+
+
+void 
+Results::OutputResults (EnhancerParam &Param, Sequence::Fasta  &Sequence, vector <Annotation *> & Glist, Exon &Elist)
+
+{
+
+  int NumberofSites = Param.GetNumberofBindingSites() ;
+  int Width = Param.GetWidthConstraint() ;
+  string BooleanConstraints = Param.GetConditionConstraint() ;
+  int start, TotalResults ;
+  int Count ;
+  int LastSite ;
+  int ClusterCount = 1 , ClusterLogicCount = 1, ClusterGeneCount =1 ;
+  int ClusterSatisfying = 1 ;
+  char buffer [2000] ;
+  char donefilename [1000] ;
+  char gfffilename [1000] ;
+  char noresult[1000] ;
+  char xmlfilename [1000] ;
+  char SaveClusterFilename [1000] ;
+  char SummaryClusterFilename [1000] ;
+  char summaryxmlfilename [1000] ;
+  string tempdonebuffer ;
+  bool FoundValue ;
+  ofstream donefile, gfffile, xmlfile, summaryxmlfile ;
+  fstream SaveCluster ;
+  fstream SummaryCluster ;
+  string description ;
+  string xml ;
+  string summaryxml ;
+  string GeneXmlStr ;
+
+  namespace fs = boost::filesystem;
+
+  strcpy (SaveClusterFilename, Param.GetSaveFileName()) ;
+  strcat (SaveClusterFilename, Param.GetChName()) ;
+  strcpy (SummaryClusterFilename, SaveClusterFilename) ;
+  strcat (SaveClusterFilename, ".res") ;
+  strcat (SummaryClusterFilename, ".sum") ;
+  strcpy (summaryxmlfilename,(char *) Param.GetDirectoryName()) ;
+  summaryxmlfilename[strlen(summaryxmlfilename) -1] = '_' ;
+  strcat (summaryxmlfilename, "summary.xml") ;
+  summaryxml = "" ;
+  if (fs::exists (SaveClusterFilename))
+    {
+      unlink (SaveClusterFilename) ;
+    }
+  if (fs::exists (SummaryClusterFilename))
+    {
+      unlink (SummaryClusterFilename) ;
+    }
+  
+  string donebuffer ;
+  donebuffer.reserve(16384) ;
+
+  tempdonebuffer.reserve (16384)  ;
+
+  strcpy (donefilename,(char *) Param.GetDirectoryName()) ;
+  strcat (donefilename, (char *) Param.GetChName()) ;
+  strcat (donefilename, ".done") ;
+  strcpy (gfffilename,(char *) Param.GetDirectoryName()) ;
+  strcat (gfffilename, (char *) Param.GetChName()) ;
+  strcat (gfffilename, ".gff") ;
+  strcpy (xmlfilename,(char *) Param.GetDirectoryName()) ;
+  strcat (xmlfilename, "index.xml") ;
+  strcpy (noresult,(char *) Param.GetDirectoryName()) ;
+  strcat (noresult, (char *) Param.GetChName()) ;
+  strcat (noresult, ".nores") ;
+
+
+  donefile.open (donefilename, ios::out) ;
+  gfffile.open (gfffilename, ios::app) ;
+  xmlfile.open (xmlfilename, ios::out) ;
+  string Results ;
+  char ChromosomeName[100] ;
+  const char *underscore ;
+  char WebBuffer[1000] ;
+  string temp ;
+  temp.reserve (8192) ;
+  string ImageClusterXml ;
+  string ImageGeneXml ; 
+
+  description = "" ;
+
+  temp = "" ; 
+  xml = "" ;
+  GeneXmlStr = "" ;
+  int FileNotOpened = 1 ;
+  string tempxmlstr ;
+
+  Results.reserve (65536) ;
+  ImageClusterXml = "" ;
+  ImageGeneXml = "" ;
+
+  underscore = strchr (Param.GetChName(), '_') ;
+  if (strstr(Param.GetChName(), Param.GetOrganismName()))
+      strcpy (ChromosomeName, &(underscore[1])) ;
+  else
+    strcpy (ChromosomeName, Param.GetChName()) ;
+  
+  xml += "<?xml version=\"1.0\" standalone=\"yes\"?>\n" ;
+  stable_sort (ResultList.begin(), ResultList.end(), PositionOrder)  ;
+  TotalResults = ResultList.size() ;
+  int ResultCount ;
+  ResultCount = 0 ;
+  xml += "<clusters>\n" ;
+  //  for (ResultCount = 0 ; ResultCount < TotalResults ; ResultCount++)
+  while (ResultCount < TotalResults)
+    {
+      start = ResultCount ;
+      if ((start + NumberofSites) > TotalResults)
+	break ;
+      LastSite = NumberofSites ;
+      while (((start + LastSite) < TotalResults) &&
+	     ((ResultList[start+ LastSite]->GetPosition() -
+	       (ResultList[start]->GetPosition()) <= Width)))
+	LastSite++ ;
+      ResultCount++ ;
+      char PrecedencePattern[40] ;
+      memset (PrecedencePattern, '\0', 40) ;
+      if ((ResultList[start+ (LastSite - 1)]->GetPosition() - 
+ 	  (ResultList[start]->GetPosition()) <= Width))
+	{
+	  ClusterSatisfying++ ;
+	  memset(SitesCount, 0, sizeof(int) * 26) ;
+	  for (Count = start ; Count < (start + LastSite) ; Count++)
+	    {
+	      char buff[3] ;
+	      (SitesCount[ResultList[Count]->GetName() - 0x41])++ ;
+	      buff[0] = ResultList[Count]->GetName() ;
+	      if (ResultList[Count]->GetType() == 'r')
+		buff[1] = '<' ;
+	      else
+		buff[1] = '>' ;
+	      buff[2] = '\0' ;
+	      strcat (PrecedencePattern, buff) ;
+	    }
+
+	  if ((BooleanConstraints.length() == 0) || EvaluateConditions((char *) BooleanConstraints.c_str(), SitesCount))
+	    {
+	      
+	      long start_gene, end_gene ;
+	      
+	      if (Param.GetDirection() == 'b')
+		{
+		  start_gene = ResultList[start]->GetPosition() - (Param.GetDisplay()/2) ;
+		  end_gene = ResultList[start]->GetPosition() + (Param.GetDisplay()/2)  ;
+		  if (start_gene < 0) start_gene = 0 ;
+		  if (end_gene > Sequence.length()) end_gene = Sequence.length() - 1 ;
+		}
+	      if (Param.GetDirection() == 'l')
+		{
+		  start_gene = ResultList[start]->GetPosition() - Param.GetDisplay() ;
+		  end_gene = ResultList[start]->GetPosition() + 100 ;
+		  if (start_gene < 0) start_gene = 0 ;
+		  if (end_gene > Sequence.length()) end_gene = Sequence.length() - 1 ;
+		}
+	      if (Param.GetDirection() == 'r')
+		{
+		  start_gene = ResultList[start]->GetPosition() - 100 ;
+		  end_gene = ResultList[start]->GetPosition() + Param.GetDisplay() ;
+		  if (start_gene < 0) start_gene = 0 ;
+		  if (end_gene > Sequence.length()) end_gene = Sequence.length() - 1 ;
+		}
+
+	      tempdonebuffer.erase(tempdonebuffer.begin(), tempdonebuffer.end()) ;
+	      FoundValue = false ;
+	      GeneXmlStr += "<genes>\n" ;
+	      GetNearByGenes (ResultList[start]->GetPosition(),
+			      ResultList[start + (LastSite-1)]->GetPosition(),
+			      temp, Glist, Elist, Param, tempdonebuffer, GeneXmlStr, FoundValue, ImageGeneXml) ;
+			      //	      fprintf (stderr, "%s\n", FoundValue ? "true" : "false" ) ;
+	      GeneXmlStr += "</genes>\n" ;
+	      if (FoundValue)
+		{
+		  if (Param.FindPrecedence (PrecedencePattern))
+		  {	
+
+		    ResultCount += LastSite - 1 ; 
+		    
+		    if (FileNotOpened)
+		      {
+			SaveCluster.open (SaveClusterFilename, ios::out | ios::binary) ;
+			SummaryCluster.open (SummaryClusterFilename, ios::out) ;
+			FileNotOpened = 0 ;
+		      }
+		    SaveCluster.write ((char *) &LastSite, sizeof(int)) ;
+		    sprintf (WebBuffer, "%s%s%s_%s?name=%s:%ld..%ld<and>span=%ld", WebAddress, EnhancerAddress, Param.GetSessionName(), Param.GetChName(), ChromosomeName, start_gene, end_gene, end_gene-start_gene) ;
+
+		    char *Ch = (char *) strchr (Param.GetChName(), '_') ;
+		    ++Ch ;
+		    sprintf (buffer,  "%s\tcig\tcluster\t%ld\t%ld\t.\t.\t.\tcluster %d\n", Ch, ResultList[start]->GetPosition()+1,(ResultList[start+LastSite-1]->GetPosition() + ResultList[start+LastSite-1]->GetLength()), ClusterCount) ;
+		    Results += buffer ;
+		    sprintf (buffer,  "\"%s-%s-%d\"", Param.GetSearchName(),
+			     Param.GetChName(),
+			     ClusterCount) ;
+		    xml += "<cluster" ;
+		    xml += " name=" ;
+		    xml += buffer ;
+		    xml += ">\n" ;
+		    xml += "<gmod>\n" ;
+		    sprintf (WebBuffer, "<address>\n%s\n</address>\n<location>\n%s%s_%s\n</location>\n<nameval>\nname=%s:%ld..%ld\n</nameval>\n<nameval>\nspan=%ld\n</nameval>", WebAddress, EnhancerAddress, Param.GetSessionName(), Param.GetChName(), ChromosomeName, start_gene, end_gene, end_gene-start_gene) ;
+		    xml += WebBuffer ;
+		    xml += "\n</gmod>\n" ;
+		    description = "" ;
+		    description += buffer ;
+		    BuildImageMapStr (ResultList[start]->GetPosition(),
+				      ResultList[start+LastSite - 1]->GetPosition() +
+				      ResultList[start+LastSite -1]->GetLength(),
+				      start_gene,
+				      end_gene,
+				      ENHANCER,
+				      false,
+				      description ,
+				      ImageClusterXml) ;
+		    description.erase (description.begin(), description.end()) ;
+
+		    PrintResults (Param, start, start + LastSite, Sequence, Results, ClusterCount, SaveCluster, xml) ;
+		    xml += GeneXmlStr ;
+		    GeneXmlStr.erase( GeneXmlStr.begin(),
+				      GeneXmlStr.end()) ;
+		    xml += "<image>\n" ;
+		    xml += ImageGeneXml.c_str() ;
+		    xml += ImageClusterXml.c_str() ;
+		    xml += "</image>\n" ;
+		    ImageGeneXml.erase() ;
+		    ImageClusterXml.erase() ;
+		    gfffile.flush() ;
+		    ClusterCount++ ;
+		    xml += "</cluster>\n" ;
+		  }
+               else
+		  {
+		  }
+		  ClusterGeneCount++ ;
+		}
+	      else
+		{
+		}
+		  ClusterLogicCount++ ;
+	    }
+	}
+    }
+   if (ClusterCount == 1) 
+    {
+      ofstream nores(noresult) ;
+      nores << "noresult" << endl ;
+      nores.close() ;
+    }
+  gfffile.close() ;
+  xml += "</clusters>" ;
+  //#ifdef DEBUG 
+  vector <PatternClass *> PatternLists ;
+    int count ;
+    PatternLists = Param.GetPatternLists () ;
+    if (fs::exists (SummaryClusterFilename))
+      SummaryCluster << "<table border=1>" << endl ;
+    summaryxml += "<chromosome name=\"" ;
+    summaryxml += Param.GetChName() ;
+    summaryxml += "\">\n" ;
+    for (count = 0 ; count < PatternLists.size() ; count++) 
+      {
+	summaryxml += "<motif>\n" ;
+	summaryxml += "<name>\n" ;
+	summaryxml +=  PatternLists[count]->GetPatternName() ;
+	summaryxml += "\n</name>\n" ;
+	summaryxml += "<username>\n" ;
+	summaryxml +=   PatternLists[PatternLists[count]->GetPatternName() - 0x41]->GetUserPatternName() ;
+	summaryxml += "\n</username>\n" ;
+	summaryxml += "<pattern>\n" ;
+	summaryxml += PatternLists[count]->GetPattern() ;
+	summaryxml += "\n</pattern>\n" ;
+	sprintf (buffer, "<total>\n%d\n</total>\n",
+		 (PatternLists[count]->GetNumberofForward()+ 
+		  PatternLists[count]->GetNumberofReverse())) ;
+	summaryxml += buffer ;
+	summaryxml += "</motif>\n" ;
+      }
+
+
+  if (fs::exists (SummaryClusterFilename))
+    {
+      sprintf (buffer, "<distance>\n<min>\n%d\n</min>\n<max>\n%d\n</max>\n<result>%d\n</result></distance>",
+	       Param.GetMin(), Param.GetMax(), (ClusterSatisfying-1)) ;
+      summaryxml += buffer ; 
+      sprintf (buffer, "<binding>\n<number>\n%d</number>\n<result>\n%d\n</result>\n</binding>\n", Param.GetNumberofBindingSites(), (ClusterSatisfying-1)) ;
+      summaryxml += buffer ;
+      sprintf (buffer, "<logic>\n<constraint>\n%s\n</constraint>\n<result>\n%d\n</result>\n</logic>\n", Param.GetOriginalConditionConstraint(), (ClusterLogicCount-1)) ;
+      summaryxml += buffer ;
+      sprintf (buffer, "<geneconstraint>\n<result>\n%d\n</result>\n</geneconstraint>\n", (ClusterGeneCount-1)) ;
+      summaryxml += buffer ;
+      sprintf (buffer, "<precedence>\n<result>\n%d\n</result>\n</precedence>\n", (ClusterCount-1)) ;
+      summaryxml += buffer ;
+    }
+
+  summaryxml += "</chromosome>\n" ;
+
+    if (ClusterCount <= 5) 
+      {
+      }
+    
+    donefile.flush() ;
+    donefile.close() ;
+    summaryxmlfile.open (summaryxmlfilename, ios::out) ;
+    summaryxmlfile << summaryxml ;
+    summaryxmlfile.close() ;
+    xmlfile << xml ;
+    xmlfile.close() ;
+    if (fs::exists(SaveClusterFilename))
+      {
+	SaveCluster.close() ;
+      }
+    if (fs::exists(SummaryClusterFilename))
+      {
+	SummaryCluster.close() ;
+      }
+    donebuffer.erase() ;
+    Results.erase() ;
+  
+}
+
+
+void 
+Results::PrintResults (EnhancerParam &Param, int start, int end, Sequence::Fasta &fastaseq, string &results, int cluster, fstream &SaveCluster, string &xml)
+
+{
+
+  int PrintCount ;
+  int Position ;
+  static string seq ;
+  int from, to ;
+  char ch ;
+  char buffer [1000] ;
+  char seqbuffer [1000] ;
+  long BeginPosition, FillLengthPosition, LengthPosition ;
+  int BreakPosition ;
+  string tempxmlbuffer ;
+  char distancebuffer [1000] ;
+
+  BeginPosition = 0 ; 
+  LengthPosition = 0 ;
+  FillLengthPosition = 0 ;
+  int PageCut = 0 ;
+
+  tempxmlbuffer = "" ;
+
+  xml += "<motifs>\n" ;
+  if (!seq.length()) 
+    {
+      seq = fastaseq.GetSeq().c_str() ;
+    }
+  
+
+    int BeginSubstr ;
+    int EndSubStr ;
+
+    BeginSubstr = ResultList[start]->GetPosition() - 200 ;
+    if (BeginSubstr < 0)
+      BeginSubstr = 0 ;
+
+    if (BeginSubstr == 0) 
+      EndSubStr = ResultList[start]->GetPosition() ;
+    else
+      EndSubStr = 200 ;
+
+    tempxmlbuffer += "<sequence>\n<motifleft>\n" ;
+    while (EndSubStr > 0)
+      {
+	if (EndSubStr > 60)
+	  {
+	    sprintf (seqbuffer, "%s", (seq.substr(BeginSubstr, 60).c_str())) ;
+	    BeginSubstr += 60 ;
+	    EndSubStr -= 60 ;
+	    tempxmlbuffer += seqbuffer ;
+	  }
+	else
+	  {
+	    sprintf (seqbuffer, "%s", (seq.substr(BeginSubstr, EndSubStr).c_str())) ;
+	    BeginSubstr += EndSubStr ;
+	    EndSubStr = 0  ;
+	    tempxmlbuffer += seqbuffer ;
+	  }
+      }
+    tempxmlbuffer += "\n</motifleft>\n<motifsequence>\n" ;
+
+   for (PrintCount = start ; PrintCount < end ; PrintCount++)
+     {
+
+       xml += "<motifdetail>\n" ;
+
+       if (PrintCount == start)
+	 {
+	 }
+       else
+	 {
+	   from = ResultList[PrintCount-1]->GetPosition()+ ResultList[PrintCount-1]->GetLength() ;
+	   to = ResultList[PrintCount]->GetPosition() - (ResultList[PrintCount-1]->GetPosition() + ResultList[PrintCount-1]->GetLength()) ;
+ #ifdef DEBUG	  
+	   if (to >= 0)
+	     cout << seq.substr(from, to) << "  " ;
+ #endif
+	 }
+
+       if (PrintCount == start)
+	 {
+	   BeginPosition = ResultList[PrintCount]->GetPosition() ;
+	   LengthPosition  =  ResultList[PrintCount]->GetLength() ;
+	 }
+       else
+	 {
+	   if ((ResultList[PrintCount-1]->GetPosition()+ ResultList[PrintCount-1]->GetLength()) >
+	       ResultList[PrintCount]->GetPosition())
+	   {
+
+	     BeginPosition = ResultList[PrintCount-1]->GetPosition() + ResultList[PrintCount-1]->GetLength() ;
+	     LengthPosition = ResultList[PrintCount]->GetPosition() + ResultList[PrintCount]->GetLength() - BeginPosition ;
+	     if ((ResultList[PrintCount]->GetPosition() + 
+		  ResultList[PrintCount]->GetLength()) < 
+		 (ResultList[PrintCount-1]->GetPosition()+ ResultList[PrintCount-1]->GetLength()))
+	       {
+		 LengthPosition = 0 ;
+	       }
+	   }
+	 }
+
+       if (PrintCount+1 != end)
+	 {
+	   if ((ResultList[PrintCount]->GetPosition() + 
+		ResultList[PrintCount]->GetLength()) > ResultList[PrintCount+1]->GetPosition())
+	     {
+	       BeginPosition = ResultList[PrintCount]->GetPosition() ;
+	       LengthPosition = ResultList[PrintCount+1]->GetPosition() - 
+		 ResultList[PrintCount]->GetPosition() ;
+	     }
+	   else
+	     {
+	       BeginPosition = ResultList[PrintCount]->GetPosition() ;
+	       LengthPosition = ResultList[PrintCount]->GetLength() ;
+	     }
+	 }
+       else
+	 {
+	       BeginPosition = ResultList[PrintCount]->GetPosition() ;
+	       LengthPosition = ResultList[PrintCount]->GetLength() ;
+	 }
+
+       if (PrintCount != (end -1))
+	 {
+	   FillLengthPosition = ResultList[PrintCount+1]->GetPosition() - 
+	     (ResultList[PrintCount]->GetPosition() + ResultList[PrintCount]->GetLength()) ;
+	 }
+       else
+	 {
+	   FillLengthPosition = 0 ;
+	 }
+
+
+       if ((PageCut + LengthPosition) > 60)
+	 {
+	   BreakPosition = PageCut + LengthPosition - 60 ;
+	   PageCut = LengthPosition - BreakPosition ;
+	 }
+       else
+	 {
+	   BreakPosition = -1 ;
+	   PageCut += LengthPosition ;
+	 }
+       if (BreakPosition != -1)
+	 {
+	   sprintf (buffer, "%s<br>%s</font>", (seq.substr(BeginPosition, PageCut)).c_str(), (seq.substr(BeginPosition+PageCut, BreakPosition)).c_str()) ;
+	   tempxmlbuffer += seqbuffer ;
+	   PageCut = BreakPosition ;
+	 }
+       else
+	 {
+	   sprintf (seqbuffer, "<motif>\n<name>\n%c\n</name>\n<color>\n%s\n</color>\n<pattern>\n%s\n</pattern>\n</motif>\n", ResultList[PrintCount]->GetName(), color[(int)(ResultList[PrintCount]->GetName()) - 0x41],(seq.substr(BeginPosition, LengthPosition)).c_str()) ;
+	   sprintf (seqbuffer, "%s", (seq.substr(BeginPosition, LengthPosition)).c_str()) ;
+	   tempxmlbuffer += seqbuffer ;
+	 }
+
+      if (FillLengthPosition > 0)
+	{
+	  if ((PageCut + FillLengthPosition) > 60)
+	    {
+	      int Advance = 0 ;
+	      BreakPosition = PageCut + FillLengthPosition  ;
+	      tempxmlbuffer += "<next>\n" ;
+	      while (BreakPosition > 60)
+		{
+		  sprintf (seqbuffer, "%s", seq.substr(BeginPosition + LengthPosition + Advance, 60 - PageCut).c_str()) ;
+		  tempxmlbuffer += seqbuffer ;
+		  Advance += 60 - PageCut ;
+		  BreakPosition -= (60 - PageCut)  ;
+		  PageCut = 0 ;
+		}
+
+	      Advance -= 60 ;
+	      sprintf (seqbuffer, "%s",
+		       (seq.substr(BeginPosition + LengthPosition + Advance,BreakPosition)).c_str()) ;
+	      tempxmlbuffer += seqbuffer ;
+	      tempxmlbuffer += "\n</next>\n" ;
+	      PageCut = BreakPosition ;
+	    }
+
+	  else 
+	    {
+	      tempxmlbuffer += "<next>\n" ;
+	      sprintf (seqbuffer, "%s",
+		       (seq.substr(BeginPosition + LengthPosition,FillLengthPosition)).c_str()) ;
+	      tempxmlbuffer += seqbuffer ;
+	      PageCut += FillLengthPosition ;
+	      tempxmlbuffer += "\n</next>\n" ;
+	    }
+	}
+
+       sprintf (seqbuffer, "%s", (seq.substr(ResultList[PrintCount]->GetPosition(), ResultList[PrintCount]->GetLength())).c_str()) ;
+       tempxmlbuffer += seqbuffer ;
+       xml += "<pattern>\n" ;
+       xml += seqbuffer ;
+       xml += "\n</pattern>\n" ;
+ #ifdef DEBUG	  
+       cout << "<" << ResultList[PrintCount]->GetName() << ">" ;
+ #endif
+       if (ResultList[PrintCount]->GetType() == 'r')
+	 {
+ #ifdef DEBUG	  
+	   cout << "   <----  " ;
+ #endif
+	   ch = '-' ;
+	 }
+       else
+	 {
+ #ifdef DEBUG	  
+	   cout << "   ---->  " ;
+ #endif
+	   ch = '+' ;
+	 }
+       BeginPosition = 0 ; 
+       LengthPosition = 0 ;
+       FillLengthPosition = 0 ;
+       if (PrintCount < (end -1))
+	 {
+	   sprintf (distancebuffer, "<distance>\n%ld\n</distance>\n",
+		    ResultList[PrintCount+1]->GetPosition() - 
+		    (ResultList[PrintCount]->GetPosition() +  
+		     ResultList[PrintCount]->GetLength())) ;
+	 }
+       else
+	 {
+	   strcpy (distancebuffer, "<distance>\n0\n</distance>\n") ;
+	 }
+
+       char *Ch ;
+       if (strstr(Param.GetChName(), Param.GetOrganismName()))
+	 {
+	   Ch = (char *) strchr (Param.GetChName(), '_') ;
+	   ++Ch ;
+	 }
+       else
+	 {
+	   Ch = (char *) Param.GetChName () ;
+	 }
+       ResultList[PrintCount]->SaveIntoFile (SaveCluster) ;
+       xml += "<name>\n" ;
+       xml += ResultList[PrintCount]->GetName() ;
+       xml += "\n</name>\n" ;
+       xml += "<username>\n" ;
+       xml += Param.GetPatternLists()[ResultList[PrintCount]->GetName() - 0x41]->GetUserPatternName() ;
+       xml += "\n</username>\n" ;
+       sprintf (buffer, "<start>\n%ld\n</start>\n<length>\n%ld\n</length>\n<orientation>\n%c\n</orientation>\n", ResultList[PrintCount]->GetPosition()+1, (ResultList[PrintCount]->GetPosition() + ResultList[PrintCount]->GetLength()), ResultList[PrintCount]->GetType()) ;
+       xml += buffer ;
+       sprintf (buffer,  "%s\tcig\tsites\t%ld\t%ld\t.\t%c\t.\tcluster %d-%s\n", Ch, ResultList[PrintCount]->GetPosition()+1,(ResultList[PrintCount]->GetPosition() + ResultList[PrintCount]->GetLength()), ch, cluster, Param.GetPatternLists()[ResultList[PrintCount]->GetName() - 0x41]->GetUserPatternName()) ;
+       results += buffer ;
+       xml += distancebuffer;
+       xml += "</motifdetail>\n" ;
+     }
+
+    BeginSubstr = ResultList[end-1]->GetPosition() + ResultList[end -1]->GetLength() ;
+    if ((BeginSubstr + 200) >= seq.length()) 
+      EndSubStr = seq.length() - BeginSubstr ;
+    else
+      EndSubStr = 200 ;
+    
+    tempxmlbuffer += "</motifsequence>\n<motifright>\n" ;
+
+    while (EndSubStr > 0)
+      {
+	if (EndSubStr > 60)
+	  {
+	    sprintf (seqbuffer, "%s", (seq.substr(BeginSubstr, 60).c_str())) ;
+	    tempxmlbuffer += seqbuffer ;
+	    BeginSubstr += 60 ;
+	    EndSubStr -= 60 ;
+	  }
+	else
+	  {
+	    sprintf (seqbuffer, "%s", (seq.substr(BeginSubstr, EndSubStr).c_str())) ;
+	    tempxmlbuffer += seqbuffer ;
+	    BeginSubstr += EndSubStr ;
+	    EndSubStr = 0  ;
+	  }
+      }
+    tempxmlbuffer += "</motifright>\n</sequence>\n" ;
+
+
+  cluster++ ;
+  xml += tempxmlbuffer.c_str () ;
+  tempxmlbuffer.clear() ;
+  xml += "</motifs>\n" ;
+  
+}
+
+void BuildImageMapStr (long start, long end, long leftend, long rightend, int type, 
+		       bool orientation, string &info, string & imagexml)
+{
+
+  char imagebuffer[2000] ;
+
+  double  steps  = (double) MAX_WIDTH_PIXELS / (double) (rightend - leftend) ;
+  int leftwidth ;
+
+  //  cout << (rightend - leftend) << endl ;
+  int width ; 
+  switch (type)
+    {
+    case ENHANCER :
+      imagexml += "<row>\n" ;
+      width = (int) ((double) (start - leftend) * steps) ;
+      leftwidth = width ;
+
+      sprintf (imagebuffer, "<blank>\n%d\n</blank>\n", width) ;
+      imagexml += imagebuffer ;
+
+      width = (int) ((double) (end  - start) * steps) ;
+      
+      sprintf (imagebuffer, "<cluster>\n<length>%d\n</length>\n", width) ;
+      imagexml += imagebuffer ;
+      imagexml += "<description>\n" ;
+      imagexml += info.c_str() ;
+      imagexml += "\n</description>\n</cluster>\n" ;
+
+      sprintf (imagebuffer, "<blank>\n%d\n</blank>\n", 
+	       (MAX_WIDTH_PIXELS - width - leftwidth)) ;
+      imagexml += imagebuffer ;
+      imagexml += "</row>\n" ;
+	
+      break ;
+    case GENE :
+      imagexml += "<row>\n" ;
+      if (orientation)
+	{
+	  if (start > leftend ) 
+	    width = (int) ((double) (start - leftend) * steps) ;
+	  if (start < leftend)
+	    width =  0 ;
+
+	  sprintf (imagebuffer, "<blank>\n%d\n</blank>\n",		   
+		   width) ;
+	  imagexml += imagebuffer ;
+
+	  leftwidth = width ;
+
+	  if ((start > leftend) && (end < rightend))
+ 	    width = (int) ((double) (end  - start) * steps) ;
+	  if ((start <leftend ) && (end < rightend))
+	    width = (int) ((double) (end  - leftend) * steps) ;
+	  if ((start < leftend ) && (end >  rightend))
+	    width = (int) ((double) (rightend  - leftend) * steps) ;
+	  if ((start > leftend) && (end > rightend))
+ 	    width = (int) ((double) (rightend  - start) * steps) ;
+	  imagexml += "<gene>\n<orientation>\nforward\n</orientation>\n" ;
+	  sprintf (imagebuffer, "<length>\n%d\n</length>\n<description>\n%s\n</description>\n",
+		   width, info.c_str()) ;
+	  imagexml += imagebuffer ;
+	  imagexml += "</gene>\n" ;
+	}
+      else
+	{
+	  if (end > leftend ) 
+	    width = (int) ((double) (end - leftend) * steps) ;
+	  if (end < leftend)
+	    width =  0 ;
+	  sprintf (imagebuffer, "<blank>\n%d\n</blank>\n",		   
+		   width) ;
+	  imagexml += imagebuffer ;
+
+	  leftwidth = width ;
+	  if ((end > leftend) && (start < rightend))
+ 	    width = (int) ((double) (start  - end) * steps) ;
+	  if ((end <leftend ) && (start < rightend))
+	    width = (int) ((double) (start  - leftend) * steps) ;
+	  if ((end < leftend ) && (start >  rightend))
+	    width = (int) ((double) (rightend  - leftend) * steps) ;
+	  if ((end > leftend) && (start > rightend))
+ 	    width = (int) ((double) (rightend  - end) * steps) ;
+
+	  imagexml += "<gene>\n<orientation>\nreverse\n</orientation>\n" ;
+
+	  sprintf (imagebuffer, "<length>\n%d\n</length>\n<description>\n%s\n</description>\n",
+		   width, info.c_str()) ;
+	  imagexml += imagebuffer ;
+	  imagexml += "</gene>\n" ;
+	}
+      imagexml += "</row>\n" ;
+      break ;
+    default : 
+      ;
+    }
+
+  return ;
+}
+

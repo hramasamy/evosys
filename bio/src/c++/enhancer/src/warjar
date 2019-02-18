@@ -1,0 +1,53 @@
+g++ -I/usr/lib/gcc/x86_64-linux-gnu/4.4.1/include/  -I/usr/lib/jvm/java-7-openjdk-amd64/include EnhancerJava.cc
+EnhancerJava.cc: In function ‘void GetNearByGenes(long int, long int, std::string&, std::vector<Annotation*>&, Exon&, EnhancerParam&, std::string&, std::string&, bool&, std::string&)’:
+EnhancerJava.cc:419:62: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+        sprintf (buffer, "%d\n", (*beginpos)->GetEndPosition()) ;
+                                                              ^
+EnhancerJava.cc:438:58: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+        NotesInfo = (char *) (*beginpos)->GetNotes("Blast") ;
+                                                          ^
+EnhancerJava.cc:452:70: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+        NotesInfo = (char *) (*beginpos)->GetNotes("MolecularFunction") ;
+                                                                      ^
+EnhancerJava.cc:538:59: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+      NotesInfo = (char *) (*beginpos)->GetNotes("GeneName") ;
+                                                           ^
+EnhancerJava.cc:572:90: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘long int’ [-Wformat=]
+      sprintf (buffer, "%s<td>%d</td>", GeneStart.c_str(), (*beginpos)->GetStartPosition()) ;
+                                                                                          ^
+EnhancerJava.cc:574:64: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+        sprintf (buffer, "%d\n", (*beginpos)->GetStartPosition()) ;
+                                                                ^
+EnhancerJava.cc:578:127: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘long int’ [-Wformat=]
+        sprintf (buffer, "%s<td>%d</td>", GeneEnd.c_str(), abs((*beginpos)->GetStartPosition() - (*beginpos)->GetEndPosition())) ;
+                                                                                                                               ^
+EnhancerJava.cc:581:62: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+        sprintf (buffer, "%d\n", (*beginpos)->GetEndPosition()) ;
+                                                              ^
+EnhancerJava.cc:598:56: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+      NotesInfo = (char *) (*beginpos)->GetNotes("Blast") ;
+                                                        ^
+EnhancerJava.cc:612:66: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+    NotesInfo = (char *) (*beginpos)->GetNotes("MolecularFunction") ;
+                                                                  ^
+EnhancerJava.cc:713:57: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+    NotesInfo = (char *) (*beginpos)->GetNotes("GeneName") ;
+                                                         ^
+EnhancerJava.cc:745:67: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+    sprintf (buffer, "<td>%d</td>", (*beginpos)->GetStartPosition()) ;
+                                                                   ^
+EnhancerJava.cc:747:64: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+        sprintf (buffer, "%d\n", (*beginpos)->GetStartPosition()) ;
+                                                                ^
+EnhancerJava.cc:750:65: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+    sprintf (buffer, "<td>%d</td>", (*beginpos)->GetEndPosition()) ;
+                                                                 ^
+EnhancerJava.cc:752:98: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+    sprintf (buffer, "%d\n", abs ((*beginpos)->GetStartPosition() - (*beginpos)->GetEndPosition())) ;
+                                                                                                  ^
+EnhancerJava.cc:774:58: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+        NotesInfo = (char *) (*beginpos)->GetNotes("Blast") ;
+                                                          ^
+EnhancerJava.cc:786:70: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+        NotesInfo = (char *) (*beginpos)->GetNotes("MolecularFunction") ;
+                                                                      ^

@@ -1,0 +1,470 @@
+package com.biocis.servlets.actions;
+
+import org.apache.struts.action.Action;
+import java.io.File;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.ActionForm;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.PrintWriter;
+import javax.servlet.http.HttpSession;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Vector;
+import java.util.Enumeration;
+import java.io.IOException;
+import javax.servlet.ServletException;
+import java.io.FileReader;
+import java.io.BufferedReader;
+import com.biocis.utils.SuperEnhancerCheck;
+import com.biocis.utils.SuperEnhancerSystem;
+import javax.servlet.RequestDispatcher;
+import java.io.FileWriter;
+import java.util.ArrayList;
+import java.util.Iterator;
+import org.apache.struts.action.ActionErrors;
+import org.apache.struts.action.ActionError;
+import com.sbs.utils.AppLogger;
+
+/**
+ * <p>Title: </p>
+ * <p>Description: </p>
+ * <p>Copyright: Copyright (c) 2004</p>
+ * <p>Company: </p>
+ * @author unascribed
+ * @version 1.0
+ */
+
+public class SuperEnhancerAction extends Action {
+    static private AppLogger logger = AppLogger.getLogger(SuperEnhancerAction.class);
+
+    //    ResourceBundle rb = ResourceBundle.getBundle("LocalStrings");
+
+    public ActionForward execute(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) {
+        try {
+            response.setContentType("text/html");
+            PrintWriter out = response.getWriter ();
+
+            // img stuff not req'd for source code html showing
+            // relative links everywhere!
+
+            HttpSession session = request.getSession(true);
+
+            return setConfigFiles (request, response, out, mapping) ;
+        }
+        catch (Exception ex) {
+        }
+        return null;
+    }
+
+
+    public ActionForward setConfigFiles (HttpServletRequest request, HttpServletResponse response, PrintWriter out, ActionMapping mapping) throws Exception
+    {
+
+        String configDirectory = request.getSession().getServletContext().getInitParameter("gbrowserLocation") ;
+
+        Map map = new HashMap() ;
+        Map overlap = new HashMap() ;
+        Map other = new HashMap() ;
+        Map motifnames = new HashMap () ;
+        Vector ChromosomeLists ;
+
+        Enumeration names = request.getParameterNames() ;
+        while (names.hasMoreElements()) {
+            String name = (String) names.nextElement();
+            String value = request.getParameter(name);
+            if (name.length() == 1)
+            {
+                map.put(name, value) ;
+                if (value.length() != 0)
+                {
+                    if (request.getParameter(name + "O") == null)
+                    {
+                        overlap.put(name, "0") ;
+                    }
+                    else
+                    {
+                        overlap.put(name, "1") ;
+                    }
+                }
+
+                String namevalue= request.getParameter("name" + name) ;
+                System.out.println (name + " " +  namevalue)  ;
+                if (namevalue.length() != 0)
+                {
+                    motifnames.put(name, namevalue) ;
+                }
+            }
+            else
+            {
+                other.put(name, value) ;
+            }
+
+        }
+
+        HttpSession session = request.getSession(true);
+        session.setMaxInactiveInterval(3600) ;
+        if(session.isNew())
+        {
+        }
+        else
+        {
+            sessionDestroyed (session.getId()) ;
+            //		session.invalidate() ;
+        }
+        String configFileDirectory = configDirectory + "/" + session.getId();
+        String organismListFile = configDirectory + "/" + other.get("organism") ;
+
+        String DoCache ;
+
+        if ((other.get("cache") != null) && (other.get("cache").equals("ON")))
+        {
+            DoCache = "1" ;
+        }
+        else
+        {
+            DoCache = "0" ;
+        }
+
+        String replaceString =null;
+        File orgFile = new File(organismListFile + ".info");
+        StringBuffer errorBuffer = new StringBuffer();
+
+        if (orgFile.exists()) {
+            FileReader fr = new FileReader (organismListFile + ".info") ;
+            BufferedReader in = new BufferedReader (fr) ;
+            try
+            {
+                replaceString = in.readLine() ;
+                fr.close() ;
+            }
+            catch (IOException e)
+            {
+                replaceString = "organism" ;
+                out.println ("SuperEnhancerServlet.java : IO error occurred <p>") ;
+            }
+        }
+        else {
+            errorBuffer.append("OrganismListFile not found at location: " + orgFile.getAbsolutePath());
+            return errorForward(errorBuffer.toString(), request, response, out, mapping);
+        }
+
+        ChromosomeLists = new Vector() ;
+        readChromosomeLists (organismListFile, ChromosomeLists, out) ;
+
+        File removeConfigFile = new File (configFileDirectory + "/config.txt") ;
+        if (removeConfigFile.exists()) {
+            removeConfigFile.delete() ;
+        }
+
+        removeConfigFile = new File( configFileDirectory + "/config.err") ;
+        if (removeConfigFile.exists()) {
+            removeConfigFile.delete() ;
+        }
+
+        File rfile = new File (configFileDirectory + "/RefreshComplete") ;
+        if (rfile.exists()) {
+            rfile.delete() ;
+        }
+
+        writeConfigFile (configFileDirectory, map, overlap, motifnames, other, out);
+
+        //SuperEnhancerCheck CheckGrammar = new SuperEnhancerCheck (configFileDirectory + "/config.txt", "", session.getId(), "") ;
+        //CheckGrammar.CheckEnhancer() ;
+
+        logger.debug("Going to check the grammer...");
+        SuperEnhancerCheck.check(configFileDirectory + "/config.txt", "", session.getId(), "") ;
+
+        String errorFileName;
+        errorFileName = configFileDirectory +  "/config.err";
+        File ErrorFile = new File (errorFileName);
+
+        if (ErrorFile.exists())
+        {
+            errorBuffer.append("<br>");
+            errorBuffer.append("You have errors in the logical expression<br>") ;
+            errorBuffer.append("make sure you have nested them in parenthesis properly <br>") ;
+            errorBuffer.append("Some examples are <br>") ;
+            errorBuffer.append("(1A & 1B) will search for presence of atleast 1 of A and B <br>") ;
+            errorBuffer.append("(1A & (1B | 1C)) will search for presence of atleast 1 of A with B or C <br>") ;
+            errorBuffer.append("(1A & (1B & 1C)) will search for presence of atleast 1 of A and B and C <br>") ;
+
+            return null;
+        }
+        else {
+            logger.debug("Grammer OK");
+        }
+
+        for (int i=0; i<ChromosomeLists.size(); i++) {
+            File removeFile = new File (configFileDirectory + "/" + session.getId() + "_" + (String)ChromosomeLists.elementAt(i) + "/" + (String)ChromosomeLists.elementAt(i) + ".done") ;
+            removeFile.delete() ;
+            removeFile = new File( configFileDirectory + "/" + session.getId() + "_" + (String)ChromosomeLists.elementAt(i) + "/" + (String)ChromosomeLists.elementAt(i) + ".nores") ;
+            removeFile.delete() ;
+        }
+
+        SuperEnhancerSystem eSystem = new SuperEnhancerSystem (configFileDirectory, ChromosomeLists, session.getId(), DoCache, replaceString, (String) other.get("organism")) ;
+
+        Thread eThread = new Thread (eSystem) ;
+
+        eThread.start() ;
+
+        //String urlValue = "http://69.237.120.190:9000/BioScope/servlet/EnhancerRefreshServlet?session=" + session.getId() + "&organism=" + other.get("organism")  + "&file=" + replaceString  ;
+
+        RequestDispatcher rd = request.getRequestDispatcher("enhancerRefresh");
+        request.setAttribute("session", session.getId());
+        request.setAttribute("organism", other.get("organism"));
+        request.setAttribute("file", replaceString);
+        rd.forward(request, response);
+
+
+        String refreshPage = mapping.findForward("enhancerRefresh").getPath();
+        String refreshUrl = refreshPage + "?session=" + session.getId() + "&organism=" + other.get("organism")  + "&file=" + replaceString;
+
+        ActionForward nextPage = new ActionForward(refreshUrl, false);
+        return nextPage;
+
+//        String urlValue = "http://69.237.120.190:9000/BioScope/servlet/EnhancerRefreshServlet?session=" + session.getId() + "&organism=" + other.get("organism")  + "&file=" + replaceString  ;
+//        response.sendRedirect(urlValue);
+    }
+
+    private ActionForward errorForward(String msg, HttpServletRequest request, HttpServletResponse response, PrintWriter out, ActionMapping mapping) {
+        request.setAttribute("errorMsg", msg);
+        try {
+            String errorPage = mapping.findForward("errorPage").getPath();
+
+            ActionForward errorForward = new ActionForward(errorPage);
+
+            return errorForward;
+        }
+        catch (Exception ex) {
+            out.println ("<html>") ;
+            out.println("<body bgcolor=\"white\">");
+            out.println("<head>");
+
+            String title = "Enhancer Error Page" ;
+
+            out.println("<title>" + title + "</title>");
+            out.println("</head>");
+            out.println("<body>");
+            out.println(msg);
+            out.println("</body>") ;
+            out.println("</html>") ;
+        }
+
+        return null;
+    }
+
+    public void executeCommand (String command, PrintWriter out)
+    {
+        try
+        {
+            //              out.println(Command + "<br>") ;
+            Process p ;
+            p = Runtime.getRuntime().exec(command);
+            try
+            {
+                int exitval = p.waitFor() ;
+                //                      System.out.println ("exit value " + exitval + "<br>") ;
+            }
+            catch (InterruptedException e)
+            {
+                out.println ("SuperEnhancerServlet.java : while executing " + command + "  <br>") ;
+            }
+        }
+        catch (IOException e)
+        {
+            out.println ("SuperEnhancerServlet.java : Command " + command + "Failed  <br>") ;
+        }
+
+    }
+
+    public void writeConfigFile ( String filename, Map exp, Map over, Map mname, Map rest, PrintWriter out) throws Exception
+    {
+        File file = new File (filename) ;
+
+        if (!file.exists() || !file.canRead())
+        {
+            file.mkdirs() ;
+        }
+
+        String ConfigFilename = filename + "/" + "config.txt" ;
+
+        file = new File (ConfigFilename) ;
+
+        try
+        {
+            file.createNewFile() ;
+        }
+        catch (IOException e)
+        {
+            out.println ("SuperEnhancerServlet.java : Cannot create file " + filename + " <br>") ;
+        }
+
+        FileWriter wr = new FileWriter(ConfigFilename) ;
+        PrintWriter br = new PrintWriter(wr) ;
+
+        String line ;
+
+        line = "<expressions>\n"  ;
+
+        java.util.List keys = new ArrayList(exp.keySet()) ;
+        Iterator keyIt = keys.iterator() ;
+        while (keyIt.hasNext())
+        {
+            Object key = keyIt.next() ;
+            String val = (String) exp.get(key) ;
+            if (val.length() != 0)
+                line += key + "=" + val.toUpperCase() + "\n" ;
+        }
+        line += "</expressions>\n" ;
+
+        line += "<overlap>\n"  ;
+
+        keys = new ArrayList(over.keySet()) ;
+        keyIt = keys.iterator() ;
+        while (keyIt.hasNext())
+        {
+            Object key = keyIt.next() ;
+            String val = (String) over.get(key) ;
+            if (val.length() != 0)
+                line += key + "=" + val + "\n" ;
+        }
+        line += "</overlap>\n" ;
+
+        line += "<motifnames>\n" ;
+
+        keys = new ArrayList(mname.keySet()) ;
+        keyIt = keys.iterator() ;
+        while (keyIt.hasNext())
+        {
+            Object key = keyIt.next() ;
+            String val = (String) mname.get(key) ;
+            if (val.length() != 0)
+                line += key + "=" + val + "\n" ;
+        }
+        line += "</motifnames>\n" ;
+        line += "<organism>\nname=" + rest.get("organism") + "\n</" + "organism" + ">\n" ;
+        line += "<min>\nname=" + rest.get("min") + "\n</" + "min" + ">\n" ;
+        line += "<max>\nname=" + rest.get("max") + "\n</" + "max" + ">\n" ;
+        line += "<directory>\nname=" + "/usr/local/apache/htdocs/gbrowse/databases/" + "\n</" + "directory" + ">\n" ;
+        if (((String) rest.get("sites")).length() == 0)
+        {
+            line += "<sites>\nnumber=1\n</" + "sites" + ">\n" ;
+        }
+        else
+        {
+            line += "<sites>\nnumber=" + rest.get("sites") + "\n</" + "sites" + ">\n" ;
+        }
+        if (((String) rest.get("constraint")).length() == 0)
+        {
+            line += "<constraint>\nwidth=20\n</" + "constraint" + ">\n" ;
+        }
+        else
+        {
+            line += "<constraint>\nwidth=" + rest.get("constraint") + "\n</" + "constraint" + ">\n" ;
+        }
+        line += "<boolean>\ncondition=" + ((String)rest.get("boolean")).toUpperCase()  + "\n</" + "boolean" + ">\n" ;
+        line += "<display>\nwidth=" + (String)rest.get("display")  + "\n</display>\n" ;
+        line += "<direction>\nvalue=" + (String)rest.get("direction")  + "\n</direction>\n" ;
+        line += "<nooverlap>\nlist=" + (String)rest.get("nooverlap")  + "\n</nooverlap>\n" ;
+        line += "<genenames>\nlist=" + ((String)rest.get("genenames")).toUpperCase()  + "\n</genenames>\n" ;
+
+        if (rest.get("anygene") != null)
+        {
+            line += "<anygene>\nvalue=1\n</anygene>\n" ;
+        }
+        else
+        {
+            line += "<anygene>\nvalue=0\n</anygene>\n" ;
+        }
+
+        line += "<precedences>\nvalue=" + ((String)rest.get("precedence")).toUpperCase() + "\n</precedences>\n" ;
+        //		line += "<save>\nuser=" + rest.get("user") + "\nname=" + rest.get("searchname") + "\n</save>\n" ;
+        line += "<save>\nuser=nobody\nname=" + rest.get("searchname") + "\n</save>\n" ;
+
+        br.print(line) ;
+        wr.close() ;
+    }
+
+
+    public void readChromosomeLists (String filename, Vector ch, PrintWriter out)
+    {
+        File file = new File (filename) ;
+
+        if (!file.exists() || !file.canRead())
+        {
+            out.println ("EnhancerExeute.java : Error in ReadChromosomeLists Module <p>") ;
+            return ;
+        }
+        try
+        {
+            FileReader fr = new FileReader (file) ;
+            BufferedReader in = new BufferedReader (fr) ;
+            String line ;
+
+            while ((line = in.readLine()) != null)
+            {
+                ch.addElement(line) ;
+            }
+            fr.close() ;
+        }
+        catch (IOException e)
+        {
+            out.println ("SuperEnhancerServlet.java : IO error occurred " + file + "<p>") ;
+        }
+    }
+
+
+    public void sessionDestroyed(String id) {
+
+        String BaseDir = "/usr/local/apache/htdocs/gbrowse/databases/" ;
+        File RemoveDir = new File(BaseDir + id ) ;
+        File ConfDir = new File("/usr/local/apache/conf/gbrowse.conf/") ;
+        if (!deleteDir(RemoveDir))
+        {
+            System.out.println ("Deleting " + RemoveDir + "......") ;
+            //		log ("Session Directory Removal failed (" + ses.getId() + "')") ;
+        }
+
+        deleteConfFiles(ConfDir, id) ;
+
+
+    }
+
+
+    // Deletes all files and subdirectories under dir.
+    // Returns true if all deletions were successful.
+    // If a deletion fails, the method stops attempting to delete and returns false.
+    public static boolean deleteDir(File dir) {
+        if (dir.isDirectory()) {
+            String[] children = dir.list();
+            for (int i=0; i<children.length; i++) {
+                boolean success = deleteDir(new File(dir, children[i]));
+                if (!success) {
+                    return false;
+                }
+            }
+        }
+
+        // The directory is now empty so delete it
+        return dir.delete();
+    }
+
+    public static boolean deleteConfFiles(File dir, String session) {
+        if (dir.isDirectory())
+        {
+            String[] children = dir.list();
+            for (int i=0; i<children.length; i++) {
+                if (children[i].indexOf(session) != -1)
+                {
+                File deleteFile = new File(dir, children[i]) ;
+                deleteFile.delete() ;
+            }
+
+            }
+        }
+        return (true) ;
+    }
+
+}

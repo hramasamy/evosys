@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XML Spy v4.3 U (http://www.xmlspy.com) by abc (xyz) -->
+<java version="1.4.2_04" class="java.beans.XMLDecoder">
+	<object class="java.util.HashMap">
+		<void method="put">
+			<string>Google</string>
+			<object class="com.biocis.infobus.spider.SpiderConfiguration">
+				<void property="URL">
+					<string>www.google.com</string>
+				</void>
+				<void property="searchParam">
+					<object class="java.util.HashMap">
+						<void method="put">
+							<string>xyz</string>
+							<string>abc</string>
+						</void>
+					</object>
+				</void>
+				<void property="spiderClass">
+					<string>com.biocis.infobus.spider.WebSpider</string>
+				</void>
+				<void property="transformerParam">
+					<object class="java.util.HashMap">
+						<void method="put">
+							<string>xslt</string>
+							<string>/resource/transformer/google.xsl</string>
+						</void>
+					</object>
+				</void>
+			</object>
+		</void>
+		<void method="put">
+			<string>File</string>
+			<object class="com.biocis.infobus.spider.SpiderConfiguration">
+				<void property="searchParam">
+					<object class="java.util.HashMap">
+						<void method="put">
+							<string>start_query_tag</string>
+							<string>/</string>
+						</void>
+					</object>
+				</void>
+				<void property="spiderClass">
+					<string>com.biocis.infobus.spider.WebSpider</string>
+				</void>
+				<void property="URL">
+					<string>file:///c:/projects/sbs/biocis/fileSpider</string>
+				</void>
+				<void property="resultTransformerClassName">
+					<string>com.biocis.infobus.spider.gigablast.GigablastResultTransformer</string>
+				</void>
+			</object>
+		</void>
+		<void method="put">
+			<string>Gigablast</string>
+			<object class="com.biocis.infobus.spider.SpiderConfiguration">
+				<void property="searchParam">
+					<object class="java.util.HashMap">
+						<void method="put">
+							<string>start_query_tag</string>
+							<string>search?q=</string>
+						</void>
+						<void method="put">
+							<string>raw</string>
+							<string>8</string>
+						</void>
+						<void method="put">
+							<string>s</string>
+							<string>0</string>
+						</void>
+						<void method="put">
+							<string>n</string>
+							<string>500</string>
+						</void>
+						<void method="put">
+							<string>sc</string>
+							<string>1</string>
+						</void>
+						<void method="put">
+							<string>dr</string>
+							<string>1</string>
+						</void>
+						<void method="put">
+							<string>spell</string>
+							<string>1</string>
+						</void>
+						<void method="put">
+							<string>nrt</string>
+							<string>100</string>
+						</void>
+					</object>
+				</void>
+				<void property="spiderClass">
+					<string>com.biocis.infobus.spider.WebSpider</string>
+				</void>
+				<void property="URL">
+					<string>http://www.gigablast.com/</string>
+				</void>
+				<void property="resultTransformerClassName">
+					<string>com.biocis.infobus.spider.gigablast.GigablastResultTransformer</string>
+				</void>
+				<void property="transformerParam">
+					<object class="java.util.HashMap">
+						<void method="put">
+							<string>xslt</string>
+							<string>/resource/transformer/gigablast.xsl</string>
+						</void>
+						<void method="put">
+							<string>category_selection_query</string>
+							<string>select category_name from category where keyword like ?</string>
+						</void>
+					</object>
+				</void>
+			</object>
+		</void>
+	</object>
+</java>

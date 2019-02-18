@@ -1,0 +1,261 @@
+#ifndef ANNOTATION_H
+#define ANNOTATION_H
+
+#include <string>
+#include <map>
+#include <stdbool.h>
+
+#include <EnhancerDefines.h>
+
+using namespace std ;
+
+typedef map <string, string> NOTES ;
+
+enum ANNOTATIONTYPES {GENETYPE, EXONTYPE, ENHANCERTYPE} ;
+
+class Annotation {
+
+  public :
+
+  Annotation () 
+    {
+
+      memset (ReferenceSequence, '\0', MAX_NAME_LENGTH) ;
+      memset (Source, '\0', MAX_NAME_LENGTH) ;
+      memset (FeatureType, '\0', MAX_FEATURE_LENGTH) ;
+      StartPosition = 0 ;
+      EndPosition = 0 ;
+      ForwardStrand = true ;
+      memset (Score, '\0', MAX_NUMBER_LENGTH) ;
+      memset (Phase, '\0', MAX_NUMBER_LENGTH) ;
+      memset (Group, '\0', MAX_NAME_LENGTH) ;
+      //      memset (MolecularFunction, '\0', MAX_CHAR_LENGTH) ;
+      //      memset (BestKeggHit, '\0', MAX_CHAR_LENGTH) ;
+    }
+
+  const char * GetReferenceSequence()
+    {
+      return ReferenceSequence ;
+    }
+
+  void SetReferenceSequence (char *Value)
+    {
+      strcpy (ReferenceSequence, Value) ;
+    }
+
+  const char * GetSource()
+    {
+      return Source ;
+    }
+
+  void SetSource (char *Value)
+    {
+      strcpy (Source, Value) ;
+    }
+
+  const char * GetFeatureType()
+    {
+      return FeatureType ;
+    }
+
+  void SetFeatureType (char *Value)
+    {
+      strcpy (FeatureType, Value) ;
+    }
+
+
+  const char * GetScore ()
+    {
+      return Score ;
+    }
+
+  void SetScore (char *Value)
+    {
+      strcpy (Score, Value) ;
+    }
+
+  const char * GetPhase ()
+    {
+      return Phase ;
+    }
+
+  void SetPhase (char *Value)
+    {
+      strcpy (Phase, Value) ;
+    }
+
+  const char * GetGroup ()
+    {
+      return Group ;
+    }
+
+  void SetAnnotationType (ANNOTATIONTYPES type) 
+    {
+      Type = type ;
+    }
+
+  ANNOTATIONTYPES GetAnnotationType ()
+    {
+      return Type ;
+    }
+
+  void SetGroup (char *Value)
+    {
+      strcpy (Group, Value) ;
+    }
+
+  //  const char * GetMolecularFunction ()
+  //    {
+  //      return MolecularFunction ;
+  //    }
+
+  //  void SetMolecularFunction (char *Value)
+  //    {
+  //      strcpy (MolecularFunction, Value) ;
+  //    }
+
+  //  const char * GetBestKeggHit ()
+  //    {
+  //      return BestKeggHit ;
+  //    }
+
+  //  void SetBestKeggHit (char *Value)
+  //    {
+  //      strcpy (BestKeggHit, Value) ;
+  //}
+
+  long GetStartPosition ()
+    {
+      return StartPosition ;
+    }
+
+  void SetStartPosition (long Value)
+    {
+      StartPosition = Value ;
+    }
+
+  long GetEndPosition ()
+    {
+      return EndPosition ;
+    }
+
+  void SetEndPosition (long Value)
+    {
+      EndPosition = Value ;
+    }
+
+  void SetForwardStrand (bool Value)
+    {
+      ForwardStrand = Value ;
+    }
+
+  bool GetForwardStrand ()
+    {
+      return ForwardStrand ;
+    }
+
+  void SwapPositionIfNeeded ()
+    {
+      if (GetForwardStrand())
+	{
+	  if (GetEndPosition() < GetStartPosition()) 
+	    {
+	      long temp = GetEndPosition() ;
+	      SetEndPosition(GetStartPosition()) ;
+	      SetStartPosition(temp) ;
+	    }
+	}
+      else
+	{
+	  if (GetStartPosition() < GetEndPosition())
+	    {
+	      long temp = GetStartPosition() ;
+	      SetStartPosition(GetEndPosition()) ;
+	      SetEndPosition(temp) ;
+	    }
+	}
+    }
+
+  ~Annotation ()
+    {
+      //      cout << " delteting notes " << endl ;
+      if (NotesSize())
+	{
+	  //	  NOTES::iterator first, last ;
+	  //	  first = Notes.begin() ;
+	  //	  last = Notes.end () ;
+	  //	  int count ;
+	  //	  while (first != last)
+	  //	    delete (*first++) ;
+	  Notes.~map() ;
+	}
+      else
+	{
+	}
+      //      Notes.clear() ;
+    }
+	  
+
+  int NotesSize ()
+    {
+      //      cout << "Notes size is " << Notes.size() << endl ;
+      return Notes.size() ;
+    }
+
+  const char * GetNotes (char *name) 
+    {
+      NOTES::iterator iter = Notes.find(name);
+      if (iter != Notes.end()) {
+	return ((*iter).second).c_str() ;
+      }
+      else
+	return NULL ;
+    }
+
+  void PrintNotes (string &Details )
+    {
+      char buffer [1000] ;
+      NOTES::iterator pos ;
+
+      for (pos=Notes.begin() ; pos != Notes.end() ; ++pos)
+	{
+	  if (strstr (pos->first.c_str(), "Blast")) 
+	    {
+	      sprintf (buffer, "<tr><td><b>GeneModel</b><A href=\"%s\">Click</a></td></tr>", 
+		       pos->second.c_str()) ;
+	    }
+	  else
+	    {
+	      sprintf (buffer, "<tr><td><b>%s</b>%s</td></tr>", 
+		       pos->first.c_str(), pos->second.c_str()) ;
+	    }
+	  Details += buffer ;
+	}
+    }
+
+  void InsertNotes (char *n1, char *val)
+    {
+      Notes.insert(make_pair(n1, val)) ;
+    }
+
+  private :
+
+    ANNOTATIONTYPES Type ;
+    char OrganismName [MAX_ORG_NAME_LENGTH] ;
+    char ReferenceSequence[MAX_NAME_LENGTH] ;
+    char Source [MAX_NAME_LENGTH] ;
+    char FeatureType[MAX_FEATURE_LENGTH] ;
+    long StartPosition ;
+    long EndPosition ;
+    char Score[MAX_NUMBER_LENGTH] ;
+    bool ForwardStrand ;
+    char Phase[MAX_NUMBER_LENGTH] ;
+    char Group [MAX_NAME_LENGTH] ;
+    NOTES Notes ;
+    //    char MolecularFunction[MAX_CHAR_LENGTH] ;
+    //    char BestKeggHit [MAX_CHAR_LENGTH] ;
+
+} ;
+
+
+#endif

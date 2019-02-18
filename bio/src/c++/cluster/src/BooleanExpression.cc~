@@ -1,0 +1,235 @@
+/*=============================================================================
+    Spirit v1.6.1
+    Copyright (c) 2001-2003 Daniel Nuffer
+    http://spirit.sourceforge.net/
+
+    Permission to copy, use, modify, sell and distribute this software is
+    granted provided this copyright notice appears in all copies. This
+    software is provided "as is" without express or implied warranty, and
+    with no claim as to its suitability for any purpose.
+=============================================================================*/
+//#include "boost/spirit/core.hpp"
+//#include "boost/spirit/tree/ast.hpp"
+#include "boost/spirit/include/classic_core.hpp"
+#include "boost/spirit/home/classic/tree/ast.hpp"
+
+
+#include <iostream>
+#include <stack>
+#include <functional>
+#include <string>
+
+// This example shows how to use an AST and tree_iter_node instead of
+// tree_val_node
+////////////////////////////////////////////////////////////////////////////
+using namespace std;
+using namespace boost::spirit::classic;
+
+typedef char const*         iterator_t;
+typedef tree_match<iterator_t, node_iter_data_factory<> >
+    parse_tree_match_t;
+
+typedef parse_tree_match_t::tree_iterator iter_t;
+
+typedef ast_match_policy<iterator_t, node_iter_data_factory<> > match_policy_t;
+typedef scanner<iterator_t, scanner_policies<iter_policy_t, match_policy_t> > scanner_t;
+typedef rule<scanner_t> rule_t;
+
+//  grammar rules
+rule_t expression, term, factor, sites;
+
+////////////////////////////////////////////////////////////////////////////
+long evaluate(parse_tree_match_t hit, int *);
+long  eval_expression(iter_t const& i, int *);
+long eval_term(iter_t const& i);
+long eval_factor(iter_t const& i);
+long eval_integer(iter_t const& i);
+
+int CheckGrammar (char *) ;
+
+long evaluate(parse_tree_match_t hit, int SitesTotal[])
+{
+  long  value ; 
+  value = eval_expression(hit.trees.begin(), SitesTotal) ;
+  if (value)
+    return (1) ;
+  else
+    return (0) ;
+}
+
+long eval_expression(iter_t const& i, int SitesTotal[])
+{
+  //            cout << "In eval_expression. i->value = " <<
+  //                 string(i->value.begin(), i->value.end()) <<
+  //      " i->children.size() = " << i->children.size() << endl;
+  
+      // cout << "ID: " << i->value.id().to_long() << endl;
+  int PartialValue ;
+
+    if (i->value.id() == sites.id())
+    {
+      char *NumberSite ;
+        assert(i->children.size() == 0);
+	NumberSite =  (char *) string(i->value.begin(), i->value.end()).c_str();
+	//	cout << NumberSite[1] << "  " << (NumberSite[0] - 0x30 ) << "   " << SitesTotal[NumberSite[1] - 0x41] << endl ;
+	int AtLeastSites = (int) (NumberSite[0] - 0x30) ;
+	int TotalSites = 0 ;
+	for (int StrCount = 1 ; StrCount < strlen(NumberSite) ; StrCount++)
+	  {
+	    if (((int) NumberSite[StrCount] >= 0x41) &&
+		((int)  NumberSite[StrCount] <= 0x4A))
+	      {
+		TotalSites += SitesTotal[NumberSite[StrCount] - 0x41]  ;
+		//		cout << "Actual " << NumberSite[StrCount] << "  " << (NumberSite[0] - 0x30 ) << "   " << SitesTotal[NumberSite[StrCount] - 0x41] << " " << AtLeastSites << endl ;
+	      }
+	  }
+	if (TotalSites >= AtLeastSites)
+	  {
+	    return (1) ;
+	  }
+	else
+	  return(0) ;
+	//        return strtol(i->value.begin(), 0, 10);
+    }
+    else if (i->value.id() == term.id())
+    {
+        // factor can only be unary minus
+        assert(*i->value.begin() == '!');
+        return ! eval_expression(i->children.begin(), SitesTotal);
+	  
+    }
+    else if (i->value.id() == expression.id())
+    {
+      char *logicalExpression ;
+      logicalExpression = (char *) string(i->value.begin(), i->value.end()).c_str() ;
+      //      cout << "the logical expression is " << logicalExpression << endl ;
+      if (*i->value.begin() == '&')
+        {
+            assert(i->children.size() == 2);
+	    PartialValue = eval_expression(i->children.begin(), SitesTotal) ;
+ 	    if (PartialValue == 0)
+	      return 0 ;
+	    else
+	      return (PartialValue & eval_expression(i->children.begin()+1, SitesTotal)) ;
+        }
+      else if (*i->value.begin() == '|') 
+        {
+            assert(i->children.size() == 2);
+            PartialValue = eval_expression(i->children.begin(), SitesTotal) ;
+	    if (PartialValue == 1)
+	      return 1 ;
+	    else
+	      return (eval_expression(i->children.begin()+1, SitesTotal)) ;
+        }
+        else
+            assert(0);
+    }
+    else
+        assert(0); // error
+
+   return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////
+int
+CheckGrammar (char *conditions)
+{
+    BOOST_SPIRIT_DEBUG_RULE(sites);
+    BOOST_SPIRIT_DEBUG_RULE(term);
+    BOOST_SPIRIT_DEBUG_RULE(expression);
+    //  Start grammar definition
+    //    sites     =   leaf_node_d[ digit_p >> *(ch_p ('A') | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J') |  *(ch_p ('A') | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J')  ] ;
+    sites     =   leaf_node_d[ digit_p >> *(ch_p ('A') | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J') ] ;
+    term      =   sites
+      |   inner_node_d[ch_p('(') >> expression >> ch_p(')')]
+      |   ((root_node_d[ch_p('!')] | root_node_d[str_p("NOT")]) >> term)
+      ;
+    expression  =   term >>
+      *(((root_node_d[ch_p('&')] | root_node_d[str_p("AND")] )>> term)
+	| ((root_node_d[ch_p('|')] | root_node_d[str_p("OR")]) >> term)
+	) ;
+    //  End grammar definition
+
+    string str;
+
+    str = conditions ;
+
+    const char* str_begin = str.c_str();
+    const char* str_end = str.c_str();
+    while (*str_end)
+      ++str_end;
+
+    scanner_t scan(str_begin, str_end);
+
+    parse_tree_match_t hit = expression.parse(scan);
+
+    if (!hit)
+      {
+	return (0) ;
+      }
+    return (1) ;
+}
+
+int
+EvaluateConditions( char *conditions, int SitesTotal[])
+{
+    BOOST_SPIRIT_DEBUG_RULE(sites);
+    BOOST_SPIRIT_DEBUG_RULE(term);
+    BOOST_SPIRIT_DEBUG_RULE(expression);
+    //  Start grammar definition
+    //    sites     =   leaf_node_d[ (digit_p >> *(ch_p ('A') | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J')) |  (*(ch_p ('A') | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J'))  ] ;
+    sites     =   leaf_node_d[ digit_p >> *(ch_p ('A') | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J') ] ;
+    term      =   sites
+      |   inner_node_d[ch_p('(') >> expression >> ch_p(')')]
+      |   ((root_node_d[ch_p('!')] | root_node_d[str_p("NOT")]) >> term)
+      ;
+    expression  =   term >>
+      *(((root_node_d[ch_p('&')] | root_node_d[str_p("AND")] )>> term)
+	| ((root_node_d[ch_p('|')] | root_node_d[str_p("OR")]) >> term)
+	) ;
+    //  End grammar definition
+
+    string str;
+
+    str = conditions ;
+
+    //    cout << conditions << endl ;
+
+    const char* str_begin = str.c_str();
+    const char* str_end = str.c_str();
+    while (*str_end)
+      ++str_end;
+
+    scanner_t scan(str_begin, str_end);
+
+    parse_tree_match_t hit = expression.parse(scan);
+
+    if (hit && str_begin == str_end)
+      {
+#if defined(BOOST_SPIRIT_DUMP_PARSETREE_AS_XML)
+	// dump parse tree as XML
+	std::map<rule_id, std::string> rule_names;
+	rule_names[&integer] = "integer";
+	rule_names[&factor] = "factor";
+	rule_names[&term] = "term";
+	rule_names[&expression] = "expression";
+	tree_to_xml(cout, hit.trees, str.c_str(), rule_names);
+#endif
+
+	if (evaluate (hit, SitesTotal))
+	  {
+	    //	    cout << "returning true " << endl ;
+	    return (1) ;
+	  }
+	
+	
+      }
+    else
+      {
+	//	cout << "came rhere untrue \n" ;
+	return (-1) ;
+      }
+    //                cout << "returning untrue " << endl ;
+    return 0;
+}
+
