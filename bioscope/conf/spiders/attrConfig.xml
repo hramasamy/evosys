@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<spiders>
+	<spider name="Gigablast">
+		<spiderConfiguration spiderClass="com.biocis.inforbus.spider.WebSpider" resultTransformerClassName="com.biocis.infobus.spider.gigablast.GigablastResultTransformer" url="http://www.gigablast.com/">
+			<searchParam start_query_tag="search?q" raw="8" s="0" n="500" sc="1" dr="1" spell="1" nrt="100"/>
+			<transformerParam xslt="/resource/transformer/gigablast.xsl" category_selection_query="select category_name from category where keyword like ?"></transformerParam>
+		</spiderConfiguration>
+	</spider>
+	<spider name="File">
+		<spiderConfiguration spiderClass="com.biocis.infobus.spider.WebSpider" url="file:///c:/projects/sbs/biocis/fileSpider" resultTransformerClassName="com.biocis.infobus.spider.gigablast.GigablastResultTransformer">
+			<searchParam start_query_tag="/"/>
+		</spiderConfiguration>
+	</spider>
+</spiders>

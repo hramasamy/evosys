@@ -1,0 +1,44 @@
+H1, H2, H3, H4, H5 { color: darkred }
+BODY { background-color: white; font-family: Arial, Helvetica, sans-serif; font-size: 10pt; }
+TR {background-color: white; color: black;} 
+TD {font-size: 10pt; font-color:blue; font-style:bold;}
+
+@media print {
+  @page rotated {size: landscape}
+  @page { size 8.5in 11in; margin: 2cm }
+  @page :first {
+  	margin-top: 10cm    /* Top margin on first page 10cm */
+   }
+   TABLE {page: rotated}
+  H1, H2, H3,
+  H4, H5, H6    { page-break-after: avoid; page-break-inside: avoid }
+  BLOCKQUOTE, 
+  PRE           { page-break-inside: avoid }
+  IMG            {page-break-inside: avoid}
+  UL, OL, DL    { page-break-before: avoid }
+}
+
+#tableName {background-color: lightGrey; color: darkRed; font-style: bold; font-size: 8pt;}
+#groupName {color: darkRed; font-style: bold; font-size: 8pt;}
+#headerRow {background-color: #848484; color: white; font-size: h4; font-weight: bolder; }
+#colorRow {background-color: whiteSmoke; color: black; }
+#ordRow {background-color: white; color: black; }
+
+#solidBorderTable {color: lightyellow; background-color: lightGray; border-color: black; border-style: solid; border-width: 1 }
+#clearBorderTable {color: white; background-color: lightGray; border-color: white; border-style: solid; border-width: 1 }
+#headerTable { background-color: black; }
+#totalsCell {font-size: 8pt; font-style: bold; color: black; border-style: solid; border-color: black; border-width: 2px, 0px, 0px, 0px;
+ }
+#blackCell {color: black;}
+#inputCell {white-space: nowrap; font-size: 8pt; font-style: bold; color: darkRed; border-style: solid; border-color: black; border-width: 1px; }
+#tokenName {white-space: nowrap; font-size: 10pt; font-weight:bold; color: darkRed;}
+#section {white-space: nowrap; font-size: 12pt; padding-left: 0; color= darkRed; font-weight: bold}
+#subSection {white-space: nowrap; font-size: 11pt; padding-left: 0; color= darkgrey; font-weight: bold}	
+#eventSection {white-space: nowrap; font-size: 10pt; padding-left: 0; color= darkRed; font-weight: bold}			
+#pipe {white-space: nowrap; font-size: 10pt; padding-left: 0; color= darkRed; font-weight: bold}		
+#emptyCell {color:white}
+#event {font-family: courier}
+#program{font-family: courier}
+#tokenClass {white-space:nowrap; font-family:courier; font-size:12pt; padding-left:0; color=darkblue; font-weight:bold}
+
+

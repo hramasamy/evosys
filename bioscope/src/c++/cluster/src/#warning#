@@ -1,0 +1,123 @@
+g++ -c -O6 -fPIC   -I/usr/include/c++/4.4.1 -I/usr/include/boost -I../include -I/usr/local/include -I/usr/include/c++/4.4.1 -I/usr/include/boost -I../include  -I/usr/include/g++ -I/usr/lib/gcc/x86_64-linux-gnu/4.4.1/include/  -I/usr/lib/jvm/java-7-openjdk-amd64/include AnnotationGrammar.cc
+AnnotationGrammar.cc: In function ‘int ReadAnnotationList(char*, std::vector<Annotation*>&)’:
+AnnotationGrammar.cc:82:32: warning: format ‘%d’ expects argument of type ‘int*’, but argument 6 has type ‘long int*’ [-Wformat=]
+     GroupName, GroupDescription) ;
+                                ^
+AnnotationGrammar.cc:82:32: warning: format ‘%d’ expects argument of type ‘int*’, but argument 7 has type ‘long int*’ [-Wformat=]
+AnnotationGrammar.cc:115:39: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+        Gl->InsertNotes("Symbol", Value) ;
+                                       ^
+AnnotationGrammar.cc:128:40: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+        Gl->InsertNotes("FlyBase", Value) ;
+                                        ^
+In file included from /usr/include/string.h:640:0,
+                 from AnnotationGrammar.cc:23:
+In function ‘void* memset(void*, int, size_t)’,
+    inlined from ‘int ReadAnnotationList(char*, std::vector<Annotation*>&)’ at AnnotationGrammar.cc:109:29:
+/usr/include/x86_64-linux-gnu/bits/string3.h:81:32: warning: call to ‘__warn_memset_zero_len’ declared with attribute warning: memset used with constant zero length parameter; this could be due to transposed parameters [enabled by default]
+       __warn_memset_zero_len ();
+                                ^
+In function ‘void* memset(void*, int, size_t)’,
+    inlined from ‘int ReadAnnotationList(char*, std::vector<Annotation*>&)’ at AnnotationGrammar.cc:122:29:
+/usr/include/x86_64-linux-gnu/bits/string3.h:81:32: warning: call to ‘__warn_memset_zero_len’ declared with attribute warning: memset used with constant zero length parameter; this could be due to transposed parameters [enabled by default]
+       __warn_memset_zero_len ();
+                                ^
+g++ -c -O6 -fPIC   -I/usr/include/c++/4.4.1 -I/usr/include/boost -I../include -I/usr/local/include -I/usr/include/c++/4.4.1 -I/usr/include/boost -I../include  -I/usr/include/g++ -I/usr/lib/gcc/x86_64-linux-gnu/4.4.1/include/  -I/usr/lib/jvm/java-7-openjdk-amd64/include EnhancerJava.cc
+EnhancerJava.cc: In function ‘void GetNearByGenes(long int, long int, std::string&, std::vector<Annotation*>&, EnhancerParam&, std::string&, std::string&, std::string&, bool&)’:
+EnhancerJava.cc:343:67: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+        char *NotesInfo = (char *) (*beginpos)->GetNotes("GeneName") ;
+                                                                   ^
+EnhancerJava.cc:374:92: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘long int’ [-Wformat=]
+        sprintf (buffer, "%s<td>%d</td>", GeneStart.c_str(), (*beginpos)->GetStartPosition()) ;
+                                                                                            ^
+EnhancerJava.cc:376:64: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+        sprintf (buffer, "%d\n", (*beginpos)->GetStartPosition()) ;
+                                                                ^
+EnhancerJava.cc:380:88: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘long int’ [-Wformat=]
+        sprintf (buffer, "%s<td>%d</td>", GeneEnd.c_str(), (*beginpos)->GetEndPosition()) ;
+                                                                                        ^
+EnhancerJava.cc:382:62: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+        sprintf (buffer, "%d\n", (*beginpos)->GetEndPosition()) ;
+                                                              ^
+EnhancerJava.cc:401:58: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+        NotesInfo = (char *) (*beginpos)->GetNotes("Blast") ;
+                                                          ^
+EnhancerJava.cc:415:70: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+        NotesInfo = (char *) (*beginpos)->GetNotes("MolecularFunction") ;
+                                                                      ^
+EnhancerJava.cc:501:59: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+      NotesInfo = (char *) (*beginpos)->GetNotes("GeneName") ;
+                                                           ^
+EnhancerJava.cc:535:90: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘long int’ [-Wformat=]
+      sprintf (buffer, "%s<td>%d</td>", GeneStart.c_str(), (*beginpos)->GetStartPosition()) ;
+                                                                                          ^
+EnhancerJava.cc:537:64: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+        sprintf (buffer, "%d\n", (*beginpos)->GetStartPosition()) ;
+                                                                ^
+EnhancerJava.cc:541:86: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘long int’ [-Wformat=]
+      sprintf (buffer, "%s<td>%d</td>", GeneEnd.c_str(), (*beginpos)->GetEndPosition()) ;
+                                                                                      ^
+EnhancerJava.cc:544:62: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+        sprintf (buffer, "%d\n", (*beginpos)->GetEndPosition()) ;
+                                                              ^
+EnhancerJava.cc:561:56: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+      NotesInfo = (char *) (*beginpos)->GetNotes("Blast") ;
+                                                        ^
+EnhancerJava.cc:575:66: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+    NotesInfo = (char *) (*beginpos)->GetNotes("MolecularFunction") ;
+                                                                  ^
+EnhancerJava.cc:676:57: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+    NotesInfo = (char *) (*beginpos)->GetNotes("GeneName") ;
+                                                         ^
+EnhancerJava.cc:708:67: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+    sprintf (buffer, "<td>%d</td>", (*beginpos)->GetStartPosition()) ;
+                                                                   ^
+EnhancerJava.cc:710:64: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+        sprintf (buffer, "%d\n", (*beginpos)->GetStartPosition()) ;
+                                                                ^
+EnhancerJava.cc:713:65: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+    sprintf (buffer, "<td>%d</td>", (*beginpos)->GetEndPosition()) ;
+                                                                 ^
+EnhancerJava.cc:715:62: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘long int’ [-Wformat=]
+        sprintf (buffer, "%d\n", (*beginpos)->GetEndPosition()) ;
+                                                              ^
+EnhancerJava.cc:733:58: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+        NotesInfo = (char *) (*beginpos)->GetNotes("Blast") ;
+                                                          ^
+EnhancerJava.cc:745:70: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+        NotesInfo = (char *) (*beginpos)->GetNotes("MolecularFunction") ;
+                                                                      ^
+g++ -c -O6 -fPIC   -I/usr/include/c++/4.4.1 -I/usr/include/boost -I../include -I/usr/local/include -I/usr/include/c++/4.4.1 -I/usr/include/boost -I../include  -I/usr/include/g++ -I/usr/lib/gcc/x86_64-linux-gnu/4.4.1/include/  -I/usr/lib/jvm/java-7-openjdk-amd64/include ClusterEnhancerClass.cc
+ClusterEnhancerClass.cc:24:111: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+ char *color[] = {"red", "orange", "green", "cyan", "brown", "purple", "black", "violet", "peachbuf", "magenta"} ;
+                                                                                                               ^
+ClusterEnhancerClass.cc:24:111: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+ClusterEnhancerClass.cc:24:111: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+ClusterEnhancerClass.cc:24:111: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+ClusterEnhancerClass.cc:24:111: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+ClusterEnhancerClass.cc:24:111: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+ClusterEnhancerClass.cc:24:111: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+ClusterEnhancerClass.cc:24:111: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+ClusterEnhancerClass.cc:24:111: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+ClusterEnhancerClass.cc:24:111: warning: deprecated conversion from string constant to ‘char*’ [-Wwrite-strings]
+ClusterEnhancerClass.cc: In member function ‘void ClusterEnhancerClass::OutputResults(EnhancerParam&, Sequence::Fasta&, std::vector<Annotation*>&)’:
+ClusterEnhancerClass.cc:177:192: warning: format ‘%d’ expects argument of type ‘int’, but argument 8 has type ‘long int’ [-Wformat=]
+       sprintf (WebBuffer, "%s%s%s_%s?name=%s:%d..%d&span=%d", WebAddress, EnhancerAddress, Param.GetSessionName(), Param.GetChName(), ChromosomeName, start_gene, end_gene, end_gene-start_gene) ;
+                                                                                                                                                                                                ^
+ClusterEnhancerClass.cc:177:192: warning: format ‘%d’ expects argument of type ‘int’, but argument 9 has type ‘long int’ [-Wformat=]
+ClusterEnhancerClass.cc:177:192: warning: format ‘%d’ expects argument of type ‘int’, but argument 10 has type ‘long int’ [-Wformat=]
+ClusterEnhancerClass.cc:182:48: error: invalid conversion from ‘const char*’ to ‘char*’ [-fpermissive]
+       char *Ch = strchr (Param.GetChName(), '_') ;
+                                                ^
+ClusterEnhancerClass.cc:184:227: warning: format ‘%d’ expects argument of type ‘int’, but argument 4 has type ‘long unsigned int’ [-Wformat=]
+       sprintf (buffer,  "%s\tcig\tcluster\t%d\t%d\t.\t.\t.\tCluster %d\n", Ch, EnhancerLists[start]->GetPosition()+1,(EnhancerLists[start+LastSite-1]->GetPosition() + EnhancerLists[start+LastSite-1]->GetLength()), ClusterCount) ;
+                                                                                                                                                                                                                                   ^
+ClusterEnhancerClass.cc:184:227: warning: format ‘%d’ expects argument of type ‘int’, but argument 5 has type ‘long unsigned int’ [-Wformat=]
+ClusterEnhancerClass.cc: In member function ‘void ClusterEnhancerClass::PrintResults(EnhancerParam&, int, int, Sequence::Fasta&, std::string&, int, std::vector<std::basic_string<char> >&, int, std::string&)’:
+ClusterEnhancerClass.cc:479:332: warning: unknown conversion type character ‘"’ in format [-Wformat=]
+     sprintf (buffer, "<TABLE BORDER=\"1\" CELLPADDING=\"2\" CELLSPACING=\"0\" WIDTH=\"200\" BGCOLOR=\"#FF0000\"><caption> <b> Cluster Sequence </b></caption><tr><td><TABLE BORDER=\"1\" CELLPADDING=\"2\" CELLSPACING=\"0\" WIDTH=\"100%\" BGCOLOR=\"#FFFFFF\"><tr><td><font color=black>%s</font>", (seq.substr(BeginSubstr, 20).c_str())) ;
+                                                                                                                                                                                                                                                                                                                                            ^
+ClusterEnhancerClass.cc:671:40: error: invalid conversion from ‘const char*’ to ‘char*’ [-fpermissive]
+     Ch = strchr (Param.GetChName(), '_') ;
+                                        ^
+make: *** [ClusterEnhancerClass.o] Error 1

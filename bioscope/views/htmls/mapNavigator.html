@@ -1,0 +1,54 @@
+<html>
+   <head>
+	<link rel="stylesheet" id="mainStyle" href="css/mapnav.css" type="text/css"/>
+   
+	<script src="js/util/ArrayUtils.js"></script>
+	<script src="js/util/AbstractCollection.js"></script>
+	<script src="js/util/BeanUtils.js"></script>
+	<script src="js/util/ArrayList.js"></script>
+
+	<script src="js/util/AbstractMap.js"></script>
+
+	<script src="js/util/HashMap.js"></script>
+	<script src="js/html/TreeNode.js"></script>
+	<script src="js/html/Menu.js"></script>
+
+	<script>
+		window.contextPath="/BugTrack";
+		var mapName = "";
+		appPath = window.location.protocol + "//" + window.location.host + window.contextPath;
+		
+		function buildTree() {
+			var root = new Menu("root", null, null);
+			root.uiHolderName = "treeHolder";
+			window.menu = root;
+			var tn = new Menu("Maps", root, null);
+			menu.addChildNode(tn);
+			var cNode = new Menu("ContactManager", tn, null);
+			tn.addChildNode(cNode);
+			cNode.addStringChildNode("AccountManagement");
+			cNode.addStringChildNode("ContactManagement");
+			cNode.addStringChildNode("RelationshipManagement");
+			window.document.getElementById("treeHolder").innerHTML = root.toHtmlString();
+			window.document.bgColor="lightgrey";
+			window.document.fgColor="darkred";
+			root.eventHandlerName = "showMap";
+			this.showMap = showMap;
+			
+		}
+		
+		function showMap(mapName) {
+			window.top.frames["contentFrame"].location.href=appPath + "/jsps/mapViewer.jsp?mapName="+mapName;
+		}
+		
+		</script>
+      <title>Enter the title of your HTML document here</title>
+   </head>
+   
+   <body onload="buildTree()">
+	<!--<font size="2em" face="arial">-->
+	<div id="treeHolder">
+	</div>
+	</font>
+   </body>
+</html>

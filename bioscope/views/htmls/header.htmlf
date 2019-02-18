@@ -1,0 +1,67 @@
+<c:set var="origURL" value="${pageContext.request.requestURL}" scope="request"/>
+<html>
+	<head>
+		<title>Biocis: an integrated bioinformatics workbench.</title>
+		<LINK title="hs"  href="<c:url value="/views/htmls/css/sbs.css"/>" type="text/css" rel="stylesheet">
+		<script id=clientEventHandlersJS language=javascript type="text/javascript" src="<c:url value="/views/htmls/js/sbs.js"/>"></script>
+		<script>
+		<!--
+			function doSearch() {
+				location.href = "http://www.google.com";
+			}
+		-->
+		</script>
+	</head>
+	<body>
+		<table width="100%">
+			<tr>
+				<td width="80%"><a href="http://www.biocis.net" target="_blank"><img src="<c:url value="/views/htmls//images/newLogo.gif"/>" width="220" height="58" id="IMG1"></a></td>
+				<td>
+					<table bordercolor="#cc3300" border="0">
+						<tr>
+							<form action="<c:url value="/search"/>" method="get" target="search">
+    							<input type="hidden" name="html" value="1">
+    							<td><input type="text" name="q" size="32"/></td>
+    							<td><input type="submit" name="searchBtn" value="Search"/></td>
+    						</form>
+						</tr>
+						<tr>
+							<td colspan="2">
+								<table border="1" width="100%" bordercolor="#ff3300" cellpadding="4" cellspacing="0">
+									<tr>
+										<td width="20%" align="center" id="sbsTable"><FONT SIZE="1"><a id="sbsHeaderLink" href="<c:url value="/"/>">Home</FONT></td>
+										<td width="20%" align="center" id="sbsTable"><FONT SIZE="1"><a id="sbsHeaderLink" href="<c:url value="/products.do"/>">Products</FONT></FONT></td>
+										<td width="20%" align="center" id="sbsTable"><FONT SIZE="1"><a id="sbsHeaderLink" href="<c:url value="/company.do"/>">Company</FONT></FONT></td>
+										<td width="20%" align="center" id="sbsTable"><FONT SIZE="1"><a id="sbsHeaderLink" href="<c:url value="/pricing.do"/>">Pricing</FONT></FONT></td>
+										<td width="20%" align="center" nowrap  id="sbsTable"><FONT SIZE="1"><a id="sbsHeaderLink" href="<c:url value="/contact.do"/>">Contact Us</FONT></td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="100%" cellpadding="0" cellspacing="1">
+			<tr>
+				<td>
+		<table width="100%" cellpadding="0" cellspacing="1">
+			<tr bgcolor="lightsteelblue">
+				<td><font face="Arial" size="2">
+					<c:choose>
+						<c:when test="${valid_user !=null}">
+						<strong>User Status: Logged In.</strong>&nbsp;&nbsp;<a href="<c:url value="/updateProfile.do"/>">Update</a></font> | <a href="<c:url value="/logout.do"/>">Logout</a></font>
+						</c:when>
+						<c:otherwise>
+						<strong>User Status: Not logged In.</strong> <a href="<c:url value="/views/jsps/login.jsp"/>">
+							Login/Register</a> | </font><a href="<c:url value="/views/jsps/forgotPWD.jsp"/>"><font face="Arial" size="2">
+							Forgot Your Password?</font></a>
+						</c:otherwise>
+					</c:choose>
+				</td>
+			</tr>
+		</table>
+
+				</td>
+			</tr>
+		</table>

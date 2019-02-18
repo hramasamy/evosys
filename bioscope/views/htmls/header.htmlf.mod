@@ -1,0 +1,72 @@
+<c:set var="origURL" value="${pageContext.request.requestURL}" scope="request"/>
+<html>
+	<head>
+		<title>Biocis: an integrated bioinformatics workbench.</title>
+		<LINK title="hs"  href="<c:url value="/htmls/css/sbs.css"/>" type="text/css" rel="stylesheet">
+		<script id=clientEventHandlersJS language=javascript type="text/javascript" src="<c:url value="/htmls/js/sbs.js"/>"></script>
+		<script>
+			var item = "home";
+			function handleMenu() {
+				//location.href = "http://www.google.com";
+				//alert(document.getItemById("location").childNodes.length);
+				document.getItemById("location").childNodes[0].innerHTML=" You are here: " + item;
+			}
+			
+			function currentLocation() {
+				return item;
+			}
+		
+		</script>
+		<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+		<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+		<meta name="ProgId" content="FrontPage.Editor.Document">
+	</head>
+	<body>
+		<table width="100%" cellpadding="1" cellspacing="1">
+			<tr bgcolor="lightsteelblue">
+				<td>
+					<a href="http://www.biocis.net" target="_blank"><img src="<c:url value="/htmls/images/newLogo.gif"/>" width="80" height="18"></a>
+				</td>
+				<td><font face="Arial" size="2">
+					<c:choose>
+						<c:when test="${valid_user !=null}">
+						<strong>User Status: Logged In.</strong>&nbsp;&nbsp;<a href="<c:url value="/updateProfile.do"/>">Update</a></font> | <a href="<c:url value="/logout.do"/>">Logout</a></font>
+						</c:when>
+						<c:otherwise><strong>User Status: Not logged In.</strong> 
+							<a href="<c:url value="/jsps/login.jsp"/>">Login/Register</a> | </font><a href="<c:url value="/jsps/forgotPWD.jsp"/>"><font face="Arial" size="2">
+							Forgot Password?</font></a>
+						</c:otherwise>
+					</c:choose>
+				</td>
+				<td align="right">
+					<form action="<c:url value="/search"/>" method="get" target="search">
+    					<input type="hidden" name="html" value="1">
+    					<input type="text" name="q" size="25"/><input type="submit" name="searchBtn" value="Search"/>
+    				</form>
+				</td>
+			</tr>
+		</table>
+		<table width="100%" border="0" cellpadding="1" cellspacing="0">
+			<tr>
+				<td align="left">
+					<table cellspacing="1" cellpadding="0">
+						<tr>
+							<td id="menuItem" width="100" align="center" onmouseover="status='Go Home';return true" onmouseout="status=''; return true" onclick="top.item='home';handleMenu()" >Home</td>
+							<td id="menuItem" width="100" align="center" onmouseover="status='Show Products';return true" onmouseout="status=''; return true" onclick="top.item='products';handleMenu()">Products</td>
+							<td id="menuItem" width="100" align="center" onmouseover="status='Go to FAQs';return true" onmouseout="status=''; return true" onclick="top.item='faqs';handleMenu()">FAQs</td>
+							<td id="menuItem" width="100" align="center" onclick="top.item='download';handleMenu()">Downloads</td>
+							<td id="menuItem" width="100" align="center" onclick="top.item='about';handleMenu()">About us</td>
+							<td id="menuItem" width="100" align="center" onclick="top.item='online';handleMenu()">Use it online</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+		<table width="100%" cellspacing="2" cellpadding="0">
+			<tr bgcolor="#ff0055">
+				<td id="location"><font face="Arial" size="3" color="#eeeedd">&nbsp;You are here: <b>Home</b></font></td>
+			</tr>
+		</table>
+
+		
+

@@ -1,0 +1,724 @@
+// Decompiled by Jad v1.5.8e. Copyright 2001 Pavel Kouznetsov.
+// Jad home page: http://www.geocities.com/kpdus/jad.html
+// Decompiler options: packimports(3) 
+// Source File Name:   MemCachedClient.java
+
+package com.danga.MemCached;
+
+import java.io.*;
+import java.util.*;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+import org.apache.log4j.Category;
+import org.apache.log4j.Logger;
+
+// Referenced classes of package com.danga.MemCached:
+//            SockIOPool
+
+public class MemCachedClient
+{
+
+    public MemCachedClient()
+    {
+        init();
+    }
+
+    private void init()
+    {
+        serialize = true;
+        compressEnable = true;
+        compressThreshold = 15360L;
+    }
+
+    public void setSerialize(boolean serialize)
+    {
+        this.serialize = serialize;
+    }
+
+    public void setCompressEnable(boolean compressEnable)
+    {
+        this.compressEnable = compressEnable;
+    }
+
+    public void setCompressThreshold(long compressThreshold)
+    {
+        this.compressThreshold = compressThreshold;
+    }
+
+    public boolean delete(String key)
+    {
+        return delete(key, null, null);
+    }
+
+    public boolean delete(String key, Date expiry)
+    {
+        return delete(key, null, expiry);
+    }
+
+    public boolean delete(String key, Integer hashCode, Date expiry)
+    {
+        SockIOPool.SockIO sock = SockIOPool.getInstance().getSock(key, hashCode);
+        if(sock == null)
+            return false;
+        StringBuffer command = new StringBuffer("delete ".concat(String.valueOf(String.valueOf(key))));
+        if(expiry != null)
+            command.append(" ".concat(String.valueOf(String.valueOf(expiry.getTime() / (long)1000))));
+        command.append("\r\n");
+        try
+        {
+            sock.write(command.toString().getBytes());
+            sock.flush();
+            String line = sock.readLine();
+            if("DELETED".equals(line))
+            {
+                log.info(String.valueOf(String.valueOf((new StringBuffer("++++ deletion of key: ")).append(key).append(" from cache was a success"))));
+                sock.close();
+                boolean flag = true;
+                return flag;
+            }
+            if("NOT_FOUND".equals(line))
+            {
+                log.info(String.valueOf(String.valueOf((new StringBuffer("++++ deletion of key: ")).append(key).append(" from cache failed as the key was not found"))));
+            } else
+            {
+                log.error("++++ error deleting key: ".concat(String.valueOf(String.valueOf(key))));
+                log.error(line);
+            }
+        }
+        catch(IOException e)
+        {
+            log.error("++++ exception thrown while writing bytes to server on delete");
+            log.error(e.getMessage(), e);
+            try
+            {
+                sock.trueClose();
+            }
+            catch(IOException ioe)
+            {
+                log.error("++++ failed to close socket : ".concat(String.valueOf(String.valueOf(sock.toString()))));
+            }
+            sock = null;
+        }
+        if(sock != null)
+            sock.close();
+        return false;
+    }
+
+    public boolean set(String key, Object value)
+    {
+        return set("set", key, value, null, null, null);
+    }
+
+    public boolean set(String key, Object value, Integer hashCode)
+    {
+        return set("set", key, value, null, hashCode, null);
+    }
+
+    public boolean set(String key, Object value, Date expiry)
+    {
+        return set("set", key, value, expiry, null, null);
+    }
+
+    public boolean set(String key, Object value, Date expiry, Integer hashCode)
+    {
+        return set("set", key, value, expiry, hashCode, null);
+    }
+
+    public boolean add(String key, Object value)
+    {
+        return set("add", key, value, null, null, null);
+    }
+
+    public boolean add(String key, Object value, Integer hashCode)
+    {
+        return set("add", key, value, null, hashCode, null);
+    }
+
+    public boolean add(String key, Object value, Date expiry)
+    {
+        return set("add", key, value, expiry, null, null);
+    }
+
+    public boolean add(String key, Object value, Date expiry, Integer hashCode)
+    {
+        return set("add", key, value, expiry, hashCode, null);
+    }
+
+    public boolean replace(String key, Object value)
+    {
+        return set("replace", key, value, null, null, null);
+    }
+
+    public boolean replace(String key, Object value, Integer hashCode)
+    {
+        return set("replace", key, value, null, hashCode, null);
+    }
+
+    public boolean replace(String key, Object value, Date expiry)
+    {
+        return set("replace", key, value, expiry, null, null);
+    }
+
+    public boolean replace(String key, Object value, Date expiry, Integer hashCode)
+    {
+        return set("replace", key, value, expiry, hashCode, null);
+    }
+
+    private boolean set(String cmdname, String key, Object value, Date expiry, Integer hashCode, Boolean serialOR)
+    {
+        SockIOPool.SockIO sock = SockIOPool.getInstance().getSock(key, hashCode);
+        if(sock == null)
+            return false;
+        if(expiry == null)
+            expiry = new Date(0L);
+        int flags = 0;
+        boolean serial = serialOR == null ? serialize : serialOR.booleanValue();
+        byte val[];
+        if(!serial && ((value instanceof String) || (value instanceof Integer) || (value instanceof Double) || (value instanceof Float) || (value instanceof Long) || (value instanceof Byte) || (value instanceof Short) || (value instanceof Character) || (value instanceof StringBuffer)))
+        {
+            log.info(String.valueOf(String.valueOf((new StringBuffer("++++ storing data as a string for key: ")).append(key).append(" for class: ").append(value.getClass().getName()))));
+            val = value.toString().getBytes();
+        } else
+        {
+            log.info(String.valueOf(String.valueOf((new StringBuffer("++++ serializing for key: ")).append(key).append(" for class: ").append(value.getClass().getName()))));
+            try
+            {
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                (new ObjectOutputStream(bos)).writeObject(value);
+                val = bos.toByteArray();
+                flags |= 8;
+            }
+            catch(IOException e)
+            {
+                log.error("failed to serialize obj", e);
+                log.error(value.toString());
+                sock.close();
+                boolean flag = false;
+                return flag;
+            }
+        }
+        if(compressEnable && (long)val.length > compressThreshold)
+        {
+            log.info("++++ trying to compress data");
+            log.info("++++ size prior to compression: ".concat(String.valueOf(String.valueOf(val.length))));
+            try
+            {
+                ByteArrayOutputStream bos = new ByteArrayOutputStream(val.length);
+                GZIPOutputStream gos = new GZIPOutputStream(bos);
+                gos.write(val, 0, val.length);
+                gos.finish();
+                val = bos.toByteArray();
+                flags |= 2;
+                log.info("++++ compression succeeded, size after: ".concat(String.valueOf(String.valueOf(val.length))));
+            }
+            catch(IOException e)
+            {
+                log.error("IOException while compressing stream: ".concat(String.valueOf(String.valueOf(e.getMessage()))));
+                log.error("storing data uncompressed");
+            }
+        }
+        try
+        {
+            String cmd = String.valueOf(String.valueOf((new StringBuffer(String.valueOf(String.valueOf(cmdname)))).append(" ").append(key).append(" ").append(flags).append(" ").append(expiry.getTime() / (long)1000).append(" ").append(val.length).append("\r\n")));
+            sock.write(cmd.getBytes());
+            sock.write(val);
+            sock.write("\r\n".getBytes());
+            sock.flush();
+            String line = sock.readLine();
+            log.info(String.valueOf(String.valueOf((new StringBuffer("++++ memcache cmd (result code): ")).append(cmd).append(" (").append(line).append(")"))));
+            if("STORED".equals(line))
+            {
+                log.info("++++ data successfully stored for key: ".concat(String.valueOf(String.valueOf(key))));
+                sock.close();
+                boolean flag1 = true;
+                return flag1;
+            }
+            if("NOT_STORED".equals(line))
+            {
+                log.info("++++ data not stored in cache for key: ".concat(String.valueOf(String.valueOf(key))));
+            } else
+            {
+                log.error("++++ error storing data in cache for key: ".concat(String.valueOf(String.valueOf(key))));
+                log.error(line);
+            }
+        }
+        catch(IOException e)
+        {
+            log.error("++++ exception thrown while writing bytes to server on delete");
+            log.error(e.getMessage(), e);
+            try
+            {
+                sock.trueClose();
+            }
+            catch(IOException ioe)
+            {
+                log.error("++++ failed to close socket : ".concat(String.valueOf(String.valueOf(sock.toString()))));
+            }
+            sock = null;
+        }
+        if(sock != null)
+            sock.close();
+        return false;
+    }
+
+    public boolean storeCounter(String key, long counter)
+    {
+        return set("set", key, new Long(counter), null, null, new Boolean(false));
+    }
+
+    public boolean storeCounter(String key, Long counter)
+    {
+        return set("set", key, counter, null, null, new Boolean(false));
+    }
+
+    public boolean storeCounter(String key, Long counter, Integer hashCode)
+    {
+        return set("set", key, counter, null, hashCode, new Boolean(false));
+    }
+
+    public long getCounter(String key)
+    {
+        return getCounter(key, null);
+    }
+
+    public long getCounter(String key, Integer hashCode)
+    {
+        long counter = -1L;
+        try
+        {
+            counter = ((Long)get(key, hashCode)).longValue();
+        }
+        catch(Exception ex)
+        {
+            log.error("counter not found at key: ".concat(String.valueOf(String.valueOf(key))));
+        }
+        return counter;
+    }
+
+    public long incr(String key)
+    {
+        return incrdecr("incr", key, 1L, null);
+    }
+
+    public long incr(String key, long inc, Integer hashCode)
+    {
+        return incrdecr("incr", key, inc, hashCode);
+    }
+
+    public long decr(String key)
+    {
+        return incrdecr("decr", key, 1L, null);
+    }
+
+    public long decr(String key, long inc, Integer hashCode)
+    {
+        return incrdecr("decr", key, inc, hashCode);
+    }
+
+    private long incrdecr(String cmdname, String key, long inc, Integer hashCode)
+    {
+        SockIOPool.SockIO sock = SockIOPool.getInstance().getSock(key, hashCode);
+        if(sock == null)
+            return -1L;
+        try
+        {
+            String cmd = String.valueOf(String.valueOf((new StringBuffer(String.valueOf(String.valueOf(cmdname)))).append(" ").append(key).append(" ").append(inc).append("\r\n")));
+            log.debug("++++ memcache incr/decr command: ".concat(String.valueOf(String.valueOf(cmd))));
+            sock.write(cmd.getBytes());
+            sock.flush();
+            String line = sock.readLine();
+            if(line.matches("\\d+"))
+            {
+                sock.close();
+                long l = Long.parseLong(line);
+                return l;
+            }
+            if("NOT_FOUND".equals(line))
+                log.info("++++ key not found to incr/decr for key: ".concat(String.valueOf(String.valueOf(key))));
+            else
+                log.error("error incr/decr key: ".concat(String.valueOf(String.valueOf(key))));
+        }
+        catch(IOException e)
+        {
+            log.error("++++ exception thrown while writing bytes to server on incr/decr");
+            log.error(e.getMessage(), e);
+            try
+            {
+                sock.trueClose();
+            }
+            catch(IOException ioe)
+            {
+                log.error("++++ failed to close socket : ".concat(String.valueOf(String.valueOf(sock.toString()))));
+            }
+            sock = null;
+        }
+        if(sock != null)
+            sock.close();
+        return -1L;
+    }
+
+    public Object get(String key)
+    {
+        return get(key, null);
+    }
+
+    public Object get(String key, Integer hashCode)
+    {
+        SockIOPool.SockIO sock = SockIOPool.getInstance().getSock(key, hashCode);
+        if(sock == null)
+            return null;
+        try
+        {
+            String cmd = String.valueOf(String.valueOf((new StringBuffer("get ")).append(key).append("\r\n")));
+            log.debug("++++ memcache get command: ".concat(String.valueOf(String.valueOf(cmd))));
+            sock.write(cmd.getBytes());
+            sock.flush();
+            Map hm = new HashMap();
+            loadItems(sock, hm);
+            log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ memcache: got back ")).append(hm.size()).append(" results"))));
+            sock.close();
+            Object obj = hm.get(key);
+            return obj;
+        }
+        catch(IOException e)
+        {
+            log.error("++++ exception thrown while trying to get object from cache for key: ".concat(String.valueOf(String.valueOf(key))));
+            log.error(e.getMessage(), e);
+        }
+        try
+        {
+            sock.trueClose();
+        }
+        catch(IOException ioe)
+        {
+            log.error("++++ failed to close socket : ".concat(String.valueOf(String.valueOf(sock.toString()))));
+        }
+        sock = null;
+        if(sock != null)
+            sock.close();
+        return null;
+    }
+
+    public Object[] getMultiArray(String keys[])
+    {
+        return getMultiArray(keys, null);
+    }
+
+    public Object[] getMultiArray(String keys[], Integer hashCodes[])
+    {
+        Map data = getMulti(keys, hashCodes);
+        Object res[] = new Object[keys.length];
+        for(int i = 0; i < keys.length; i++)
+            res[i] = data.get(keys[i]);
+
+        return res;
+    }
+
+    public Map getMulti(String keys[])
+    {
+        return getMulti(keys, null);
+    }
+
+    public Map getMulti(String keys[], Integer hashCodes[])
+    {
+        Map sockKeys = new HashMap();
+        for(int i = 0; i < keys.length; i++)
+        {
+            Integer hash = null;
+            if(hashCodes != null && hashCodes.length > i)
+                hash = hashCodes[i];
+            SockIOPool.SockIO sock = SockIOPool.getInstance().getSock(keys[i], hash);
+            if(sock == null)
+                continue;
+            if(!sockKeys.containsKey(sock.getHost()))
+                sockKeys.put(sock.getHost(), new StringBuffer());
+            ((StringBuffer)sockKeys.get(sock.getHost())).append(" ".concat(String.valueOf(String.valueOf(keys[i]))));
+            sock.close();
+        }
+
+        log.info("multi get socket count : ".concat(String.valueOf(String.valueOf(sockKeys.size()))));
+        Map ret = new HashMap();
+        Iterator i = sockKeys.keySet().iterator();
+        do
+        {
+            if(!i.hasNext())
+                break;
+            String host = (String)i.next();
+            SockIOPool.SockIO sock = SockIOPool.getInstance().getConnection(host);
+            try
+            {
+                String cmd = String.valueOf(String.valueOf((new StringBuffer("get")).append((StringBuffer)sockKeys.get(host)).append("\r\n")));
+                log.debug("++++ memcache getMulti cmd: ".concat(String.valueOf(String.valueOf(cmd))));
+                sock.write(cmd.getBytes());
+                sock.flush();
+                loadItems(sock, ret);
+            }
+            catch(IOException e)
+            {
+                log.error("++++ exception thrown while getting from cache on getMulti");
+                log.error(e.getMessage(), e);
+                i.remove();
+                try
+                {
+                    sock.trueClose();
+                }
+                catch(IOException ioe)
+                {
+                    log.error("++++ failed to close socket : ".concat(String.valueOf(String.valueOf(sock.toString()))));
+                }
+                sock = null;
+            }
+            if(sock != null)
+                sock.close();
+        } while(true);
+        log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ memcache: got back ")).append(ret.size()).append(" results"))));
+        return ret;
+    }
+
+    private void loadItems(SockIOPool.SockIO sock, Map hm)
+        throws IOException
+    {
+        String line;
+        do
+            do
+            {
+                line = sock.readLine();
+                log.debug("++++ line: ".concat(String.valueOf(String.valueOf(line))));
+                if(!line.startsWith("VALUE"))
+                    break;
+                String info[] = line.split(" ");
+                String key = info[1];
+                int flag = Integer.parseInt(info[2]);
+                int length = Integer.parseInt(info[3]);
+                log.debug("++++ key: ".concat(String.valueOf(String.valueOf(key))));
+                log.debug("++++ flags: ".concat(String.valueOf(String.valueOf(flag))));
+                log.debug("++++ length: ".concat(String.valueOf(String.valueOf(length))));
+                byte buf[] = new byte[length];
+                sock.read(buf);
+                sock.clearEOL();
+                if((flag & 2) != 0)
+                    try
+                    {
+                        GZIPInputStream gzi = new GZIPInputStream(new ByteArrayInputStream(buf));
+                        ByteArrayOutputStream bos = new ByteArrayOutputStream(buf.length);
+                        byte tmp[] = new byte[2048];
+                        int count;
+                        while((count = gzi.read(tmp)) != -1) 
+                            bos.write(tmp, 0, count);
+                        buf = bos.toByteArray();
+                        gzi.close();
+                    }
+                    catch(IOException e)
+                    {
+                        log.error("++++ IOException thrown while trying to uncompress input stream for key: ".concat(String.valueOf(String.valueOf(key))));
+                        log.error(e.getMessage(), e);
+                        throw new IOException("++++ IOException thrown while trying to uncompress input stream for key: ".concat(String.valueOf(String.valueOf(key))));
+                    }
+                Object o;
+                if((flag & 8) == 0)
+                {
+                    log.info("++++ this object is not a serialized object.  Stuffing into a string.");
+                    o = new String(buf);
+                } else
+                {
+                    ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(buf));
+                    try
+                    {
+                        o = ois.readObject();
+                        log.info("++++ deserializing ".concat(String.valueOf(String.valueOf(o.getClass().getName()))));
+                    }
+                    catch(ClassNotFoundException e)
+                    {
+                        log.error("++++ ClassNotFoundException thrown while trying to deserialize for key: ".concat(String.valueOf(String.valueOf(key))));
+                        throw new IOException("+++ failed while trying to deserialize for key: ".concat(String.valueOf(String.valueOf(key))));
+                    }
+                }
+                hm.put(key, o);
+            } while(true);
+        while(!"END".equals(line));
+        log.debug("++++ finished reading from cache server");
+    }
+
+    public boolean flushAll()
+    {
+        return flushAll(null);
+    }
+
+    public boolean flushAll(String servers[])
+    {
+        SockIOPool pool = SockIOPool.getInstance();
+        if(pool == null)
+        {
+            log.error("++++ unable to get SockIOPool instance");
+            return false;
+        }
+        servers = servers != null ? servers : pool.getServers();
+        if(servers == null || servers.length <= 0)
+        {
+            log.error("++++ no servers to flush");
+            return false;
+        }
+        boolean success = true;
+        for(int i = 0; i < servers.length; i++)
+        {
+            SockIOPool.SockIO sock = pool.getConnection(servers[i]);
+            if(sock == null)
+            {
+                log.error("++++ unable to get connection to : ".concat(String.valueOf(String.valueOf(servers[i]))));
+                success = false;
+                continue;
+            }
+            String command = "flush_all\r\n";
+            try
+            {
+                sock.write(command.getBytes());
+                sock.flush();
+                String line = sock.readLine();
+                success = "OK".equals(line) ? success : false;
+            }
+            catch(IOException e)
+            {
+                log.error("++++ exception thrown while writing bytes to server on delete");
+                log.error(e.getMessage(), e);
+                try
+                {
+                    sock.trueClose();
+                }
+                catch(IOException ioe)
+                {
+                    log.error("++++ failed to close socket : ".concat(String.valueOf(String.valueOf(sock.toString()))));
+                }
+                success = false;
+                sock = null;
+            }
+            if(sock != null)
+                sock.close();
+        }
+
+        return success;
+    }
+
+    public Map stats()
+    {
+        return stats(null);
+    }
+
+    public Map stats(String servers[])
+    {
+        SockIOPool pool = SockIOPool.getInstance();
+        if(pool == null)
+        {
+            log.error("++++ unable to get SockIOPool instance");
+            return null;
+        }
+        servers = servers != null ? servers : pool.getServers();
+        if(servers == null || servers.length <= 0)
+        {
+            log.error("++++ no servers to check stats");
+            return null;
+        }
+        Map statsMaps = new HashMap();
+        for(int i = 0; i < servers.length; i++)
+        {
+            SockIOPool.SockIO sock = pool.getConnection(servers[i]);
+            if(sock == null)
+            {
+                log.error("++++ unable to get connection to : ".concat(String.valueOf(String.valueOf(servers[i]))));
+                continue;
+            }
+            String command = "stats\r\n";
+            try
+            {
+                sock.write(command.getBytes());
+                sock.flush();
+                Map stats = new HashMap();
+                do
+                {
+                    String line = sock.readLine();
+                    log.debug("++++ line: ".concat(String.valueOf(String.valueOf(line))));
+                    if(line.startsWith("STAT"))
+                    {
+                        String info[] = line.split(" ");
+                        String key = info[1];
+                        String value = info[2];
+                        log.debug("++++ key  : ".concat(String.valueOf(String.valueOf(key))));
+                        log.debug("++++ value: ".concat(String.valueOf(String.valueOf(value))));
+                        stats.put(key, value);
+                    } else
+                    if("END".equals(line))
+                    {
+                        log.debug("++++ finished reading from cache server");
+                        break;
+                    }
+                    statsMaps.put(servers[i], stats);
+                } while(true);
+            }
+            catch(IOException e)
+            {
+                log.error("++++ exception thrown while writing bytes to server on delete");
+                log.error(e.getMessage(), e);
+                try
+                {
+                    sock.trueClose();
+                }
+                catch(IOException ioe)
+                {
+                    log.error("++++ failed to close socket : ".concat(String.valueOf(String.valueOf(sock.toString()))));
+                }
+                sock = null;
+            }
+            if(sock != null)
+                sock.close();
+        }
+
+        return statsMaps;
+    }
+
+    static Class _mthclass$(String x$0)
+    {
+        try
+        {
+            return Class.forName(x$0);
+        }
+        catch(ClassNotFoundException x$0)
+        {
+            throw new NoClassDefFoundError(x$0.getMessage());
+        }
+    }
+
+    private static Logger log;
+    private static final String VALUE = "VALUE";
+    private static final String STATS = "STAT";
+    private static final String DELETED = "DELETED";
+    private static final String NOTFOUND = "NOT_FOUND";
+    private static final String STORED = "STORED";
+    private static final String NOTSTORED = "NOT_STORED";
+    private static final String OK = "OK";
+    private static final String END = "END";
+    private static final String ERROR = "ERROR";
+    private static final String CLIENT_ERROR = "CLIENT_ERROR";
+    private static final String SERVER_ERROR = "SERVER_ERROR";
+    private static final int F_COMPRESSED = 2;
+    private static final int F_SERIALIZED = 8;
+    private boolean serialize;
+    private boolean compressEnable;
+    private long compressThreshold;
+
+    static 
+    {
+        log = Logger.getLogger((com.danga.MemCached.MemCachedClient.class).getName());
+        VALUE = "VALUE";
+        STATS = "STAT";
+        DELETED = "DELETED";
+        NOTFOUND = "NOT_FOUND";
+        STORED = "STORED";
+        NOTSTORED = "NOT_STORED";
+        OK = "OK";
+        END = "END";
+        ERROR = "ERROR";
+        CLIENT_ERROR = "CLIENT_ERROR";
+        SERVER_ERROR = "SERVER_ERROR";
+        F_COMPRESSED = 2;
+        F_SERIALIZED = 8;
+    }
+}

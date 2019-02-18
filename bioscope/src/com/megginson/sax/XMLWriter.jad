@@ -1,0 +1,436 @@
+// Decompiled by Jad v1.5.8e. Copyright 2001 Pavel Kouznetsov.
+// Jad home page: http://www.geocities.com/kpdus/jad.html
+// Decompiler options: packimports(3) 
+// Source File Name:   XMLWriter.java
+
+package com.megginson.sax;
+
+import java.io.*;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import org.xml.sax.*;
+import org.xml.sax.helpers.*;
+
+public class XMLWriter extends XMLFilterImpl
+{
+
+    public XMLWriter()
+    {
+        EMPTY_ATTS = new AttributesImpl();
+        elementLevel = 0;
+        prefixCounter = 0;
+        init(null);
+    }
+
+    public XMLWriter(Writer writer)
+    {
+        EMPTY_ATTS = new AttributesImpl();
+        elementLevel = 0;
+        prefixCounter = 0;
+        init(writer);
+    }
+
+    public XMLWriter(XMLReader xmlreader)
+    {
+        super(xmlreader);
+        EMPTY_ATTS = new AttributesImpl();
+        elementLevel = 0;
+        prefixCounter = 0;
+        init(null);
+    }
+
+    public XMLWriter(XMLReader xmlreader, Writer writer)
+    {
+        super(xmlreader);
+        EMPTY_ATTS = new AttributesImpl();
+        elementLevel = 0;
+        prefixCounter = 0;
+        init(writer);
+    }
+
+    private void init(Writer writer)
+    {
+        setOutput(writer);
+        nsSupport = new NamespaceSupport();
+        prefixTable = new Hashtable();
+        forcedDeclTable = new Hashtable();
+        doneDeclTable = new Hashtable();
+    }
+
+    public void reset()
+    {
+        elementLevel = 0;
+        prefixCounter = 0;
+        nsSupport.reset();
+    }
+
+    public void flush()
+        throws IOException
+    {
+        output.flush();
+    }
+
+    public void setOutput(Writer writer)
+    {
+        if(writer == null)
+            output = new OutputStreamWriter(System.out);
+        else
+            output = writer;
+    }
+
+    public void setPrefix(String uri, String prefix)
+    {
+        prefixTable.put(uri, prefix);
+    }
+
+    public String getPrefix(String uri)
+    {
+        return (String)prefixTable.get(uri);
+    }
+
+    public void forceNSDecl(String uri)
+    {
+        forcedDeclTable.put(uri, Boolean.TRUE);
+    }
+
+    public void forceNSDecl(String uri, String prefix)
+    {
+        setPrefix(uri, prefix);
+        forceNSDecl(uri);
+    }
+
+    public void startDocument()
+        throws SAXException
+    {
+        reset();
+        write("<?xml version=\"1.0\" standalone=\"yes\"?>\n\n");
+        super.startDocument();
+    }
+
+    public void endDocument()
+        throws SAXException
+    {
+        write('\n');
+        super.endDocument();
+        try
+        {
+            flush();
+        }
+        catch(IOException e)
+        {
+            throw new SAXException(e);
+        }
+    }
+
+    public void startElement(String uri, String localName, String qName, Attributes atts)
+        throws SAXException
+    {
+        elementLevel++;
+        nsSupport.pushContext();
+        write('<');
+        writeName(uri, localName, qName, true);
+        writeAttributes(atts);
+        if(elementLevel == 1)
+            forceNSDecls();
+        writeNSDecls();
+        write('>');
+        super.startElement(uri, localName, qName, atts);
+    }
+
+    public void endElement(String uri, String localName, String qName)
+        throws SAXException
+    {
+        write("</");
+        writeName(uri, localName, qName, true);
+        write('>');
+        if(elementLevel == 1)
+            write('\n');
+        super.endElement(uri, localName, qName);
+        nsSupport.popContext();
+        elementLevel--;
+    }
+
+    public void characters(char ch[], int start, int len)
+        throws SAXException
+    {
+        writeEsc(ch, start, len, false);
+        super.characters(ch, start, len);
+    }
+
+    public void ignorableWhitespace(char ch[], int start, int length)
+        throws SAXException
+    {
+        writeEsc(ch, start, length, false);
+        super.ignorableWhitespace(ch, start, length);
+    }
+
+    public void processingInstruction(String target, String data)
+        throws SAXException
+    {
+        write("<?");
+        write(target);
+        write(' ');
+        write(data);
+        write("?>");
+        if(elementLevel < 1)
+            write('\n');
+        super.processingInstruction(target, data);
+    }
+
+    public void emptyElement(String uri, String localName, String qName, Attributes atts)
+        throws SAXException
+    {
+        nsSupport.pushContext();
+        write('<');
+        writeName(uri, localName, qName, true);
+        writeAttributes(atts);
+        if(elementLevel == 1)
+            forceNSDecls();
+        writeNSDecls();
+        write("/>");
+        super.startElement(uri, localName, qName, atts);
+        super.endElement(uri, localName, qName);
+    }
+
+    public void startElement(String uri, String localName)
+        throws SAXException
+    {
+        startElement(uri, localName, "", EMPTY_ATTS);
+    }
+
+    public void startElement(String localName)
+        throws SAXException
+    {
+        startElement("", localName, "", EMPTY_ATTS);
+    }
+
+    public void endElement(String uri, String localName)
+        throws SAXException
+    {
+        endElement(uri, localName, "");
+    }
+
+    public void endElement(String localName)
+        throws SAXException
+    {
+        endElement("", localName, "");
+    }
+
+    public void emptyElement(String uri, String localName)
+        throws SAXException
+    {
+        emptyElement(uri, localName, "", EMPTY_ATTS);
+    }
+
+    public void emptyElement(String localName)
+        throws SAXException
+    {
+        emptyElement("", localName, "", EMPTY_ATTS);
+    }
+
+    public void dataElement(String uri, String localName, String qName, Attributes atts, String content)
+        throws SAXException
+    {
+        startElement(uri, localName, qName, atts);
+        characters(content);
+        endElement(uri, localName, qName);
+    }
+
+    public void dataElement(String uri, String localName, String content)
+        throws SAXException
+    {
+        dataElement(uri, localName, "", EMPTY_ATTS, content);
+    }
+
+    public void dataElement(String localName, String content)
+        throws SAXException
+    {
+        dataElement("", localName, "", EMPTY_ATTS, content);
+    }
+
+    public void characters(String data)
+        throws SAXException
+    {
+        char ch[] = data.toCharArray();
+        characters(ch, 0, ch.length);
+    }
+
+    private void forceNSDecls()
+    {
+        String prefix;
+        for(Enumeration prefixes = forcedDeclTable.keys(); prefixes.hasMoreElements(); doPrefix(prefix, null, true))
+            prefix = (String)prefixes.nextElement();
+
+    }
+
+    private String doPrefix(String uri, String qName, boolean isElement)
+    {
+        String defaultNS = nsSupport.getURI("");
+        if("".equals(uri))
+        {
+            if(isElement && defaultNS != null)
+                nsSupport.declarePrefix("", "");
+            return null;
+        }
+        String prefix;
+        if(isElement && defaultNS != null && uri.equals(defaultNS))
+            prefix = "";
+        else
+            prefix = nsSupport.getPrefix(uri);
+        if(prefix != null)
+            return prefix;
+        prefix = (String)doneDeclTable.get(uri);
+        if(prefix != null && ((!isElement || defaultNS != null) && "".equals(prefix) || nsSupport.getURI(prefix) != null))
+            prefix = null;
+        if(prefix == null)
+        {
+            prefix = (String)prefixTable.get(uri);
+            if(prefix != null && ((!isElement || defaultNS != null) && "".equals(prefix) || nsSupport.getURI(prefix) != null))
+                prefix = null;
+        }
+        if(prefix == null && qName != null && !"".equals(qName))
+        {
+            int i = qName.indexOf(':');
+            if(i == -1)
+            {
+                if(isElement && defaultNS == null)
+                    prefix = "";
+            } else
+            {
+                prefix = qName.substring(0, i);
+            }
+        }
+        for(; prefix == null || nsSupport.getURI(prefix) != null; prefix = "__NS".concat(String.valueOf(String.valueOf(++prefixCounter))));
+        nsSupport.declarePrefix(prefix, uri);
+        doneDeclTable.put(uri, prefix);
+        return prefix;
+    }
+
+    private void write(char c)
+        throws SAXException
+    {
+        try
+        {
+            output.write(c);
+        }
+        catch(IOException e)
+        {
+            throw new SAXException(e);
+        }
+    }
+
+    private void write(String s)
+        throws SAXException
+    {
+        try
+        {
+            output.write(s);
+        }
+        catch(IOException e)
+        {
+            throw new SAXException(e);
+        }
+    }
+
+    private void writeAttributes(Attributes atts)
+        throws SAXException
+    {
+        int len = atts.getLength();
+        for(int i = 0; i < len; i++)
+        {
+            char ch[] = atts.getValue(i).toCharArray();
+            write(' ');
+            writeName(atts.getURI(i), atts.getLocalName(i), atts.getQName(i), false);
+            write("=\"");
+            writeEsc(ch, 0, ch.length, true);
+            write('"');
+        }
+
+    }
+
+    private void writeEsc(char ch[], int start, int length, boolean isAttVal)
+        throws SAXException
+    {
+        for(int i = start; i < start + length; i++)
+            switch(ch[i])
+            {
+            case 38: // '&'
+                write("&amp;");
+                break;
+
+            case 60: // '<'
+                write("&lt;");
+                break;
+
+            case 62: // '>'
+                write("&gt;");
+                break;
+
+            case 34: // '"'
+                if(isAttVal)
+                    write("&quot;");
+                else
+                    write('"');
+                break;
+
+            default:
+                if(ch[i] > '\177')
+                {
+                    write("&#");
+                    write(Integer.toString(ch[i]));
+                    write(';');
+                } else
+                {
+                    write(ch[i]);
+                }
+                break;
+            }
+
+    }
+
+    private void writeNSDecls()
+        throws SAXException
+    {
+        for(Enumeration prefixes = nsSupport.getDeclaredPrefixes(); prefixes.hasMoreElements(); write('"'))
+        {
+            String prefix = (String)prefixes.nextElement();
+            String uri = nsSupport.getURI(prefix);
+            if(uri == null)
+                uri = "";
+            char ch[] = uri.toCharArray();
+            write(' ');
+            if("".equals(prefix))
+            {
+                write("xmlns=\"");
+            } else
+            {
+                write("xmlns:");
+                write(prefix);
+                write("=\"");
+            }
+            writeEsc(ch, 0, ch.length, true);
+        }
+
+    }
+
+    private void writeName(String uri, String localName, String qName, boolean isElement)
+        throws SAXException
+    {
+        String prefix = doPrefix(uri, qName, isElement);
+        if(prefix != null && !"".equals(prefix))
+        {
+            write(prefix);
+            write(':');
+        }
+        write(localName);
+    }
+
+    private final Attributes EMPTY_ATTS;
+    private Hashtable prefixTable;
+    private Hashtable forcedDeclTable;
+    private Hashtable doneDeclTable;
+    private int elementLevel;
+    private Writer output;
+    private NamespaceSupport nsSupport;
+    private int prefixCounter;
+}

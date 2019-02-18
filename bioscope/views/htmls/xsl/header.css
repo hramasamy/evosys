@@ -1,0 +1,137 @@
+H1
+{
+    COLOR: white
+}
+H2
+{
+    COLOR: white
+}
+H3
+{
+    COLOR: white
+}
+H4
+{
+    COLOR: white
+}
+H5
+{
+    COLOR: white
+}
+BODY
+{
+    FONT-SIZE: 5pt;
+    FONT-FAMILY: Arial, Helvetica, sans-serif;
+    BACKGROUND-COLOR: white
+}
+#TD
+{
+    FONT-SIZE: 8pt
+}
+#tableName
+{
+    FONT-SIZE: 8pt;
+    COLOR: darkred;
+    BACKGROUND-COLOR: lightgrey
+}
+#headerRow
+{
+    FONT-SIZE: 12pt;
+    COLOR: white;
+    FONT-FAMILY: @Batang;
+    BACKGROUND-COLOR: #980f08
+}
+#colorRow
+{
+    COLOR: black;
+    BACKGROUND-COLOR: whitesmoke
+}
+#pad5
+{
+    PADDING-RIGHT: 5px;
+    PADDING-LEFT: 5px;
+    FONT-SIZE: 8pt;
+    WHITE-SPACE: nowrap
+}
+#solidBorderTable
+{
+    BORDER-RIGHT: black 1px solid;
+    BORDER-TOP: black 1px solid;
+    BORDER-LEFT: black 1px solid;
+    COLOR: white;
+    BORDER-BOTTOM: black 1px solid
+}
+#headerTable
+{
+    BACKGROUND-COLOR: lightgrey
+}
+#totalsCell
+{
+    BORDER-RIGHT: black 0px solid;
+    BORDER-TOP: black 2px solid;
+    FONT-SIZE: 8pt;
+    BORDER-LEFT: black 0px solid;
+    COLOR: black;
+    BORDER-BOTTOM: black 0px solid
+}
+#blackCell
+{
+    COLOR: black
+}
+#headerCell
+{
+    FONT-SIZE: 12pt;
+    COLOR: red;
+    BACKGROUND-COLOR: lightgrey;
+    TEXT-ALIGN: center
+}
+#inputCell
+{
+    BORDER-RIGHT: black 1px dashed;
+    BORDER-TOP: black 1px dashed;
+    FONT-SIZE: 8pt;
+    BORDER-LEFT: black 1px dashed;
+    COLOR: darkred;
+    BORDER-BOTTOM: black 1px dashed;
+    WHITE-SPACE: nowrap
+}
+#emptyImage
+{
+    WIDTH: 5px;
+    HEIGHT: 0px;
+    src: ""
+}
+#footer
+{
+    COLOR: white
+}
+A.white:link
+{
+    FONT-WEIGHT: bold;
+    COLOR: white;
+    FONT-FAMILY: @Batang;
+    TEXT-DECORATION: underline
+}
+A.white:active
+{
+    FONT-WEIGHT: bold;
+    COLOR: white;
+    FONT-FAMILY: @Batang;
+    TEXT-DECORATION: underline
+}
+A.white:visited
+{
+    FONT-WEIGHT: bold;
+    COLOR: seashell;
+    TEXT-DECORATION: underline
+}
+A.white:hover
+{
+    FONT-WEIGHT: bold;
+    COLOR: peachpuff;
+    TEXT-DECORATION: none
+}
+DEAD
+{
+    COLOR: snow
+}

@@ -1,0 +1,8 @@
+#ifndef WEBSERVER_H
+#define WEBSERVER_H
+
+char WebAddress[] = "http://cigbrowser.berkeley.edu:8080/" ;
+char EnhancerAddress[] = "cgi-bin/gbrowse/" ;
+
+#endif
+

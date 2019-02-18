@@ -1,0 +1,1 @@
+ ./enhancer  -f /usr/local/apache/htdocs/gbrowse/databases/C2EC6931F1BE815F9D42C063310315DB/config.txt -c dromel_X -s C2EC6931F1BE815F9D42C063310315DB -r 1

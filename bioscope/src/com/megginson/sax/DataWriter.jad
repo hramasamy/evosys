@@ -1,0 +1,135 @@
+// Decompiled by Jad v1.5.8e. Copyright 2001 Pavel Kouznetsov.
+// Jad home page: http://www.geocities.com/kpdus/jad.html
+// Decompiler options: packimports(3) 
+// Source File Name:   DataWriter.java
+
+package com.megginson.sax;
+
+import java.io.Writer;
+import java.util.Stack;
+import org.xml.sax.*;
+
+// Referenced classes of package com.megginson.sax:
+//            XMLWriter
+
+public class DataWriter extends XMLWriter
+{
+
+    public DataWriter()
+    {
+        state = SEEN_NOTHING;
+        stateStack = new Stack();
+        indentStep = 0;
+        depth = 0;
+    }
+
+    public DataWriter(XMLReader xmlreader)
+    {
+        super(xmlreader);
+        state = SEEN_NOTHING;
+        stateStack = new Stack();
+        indentStep = 0;
+        depth = 0;
+    }
+
+    public DataWriter(Writer writer)
+    {
+        super(writer);
+        state = SEEN_NOTHING;
+        stateStack = new Stack();
+        indentStep = 0;
+        depth = 0;
+    }
+
+    public DataWriter(XMLReader xmlreader, Writer writer)
+    {
+        super(xmlreader, writer);
+        state = SEEN_NOTHING;
+        stateStack = new Stack();
+        indentStep = 0;
+        depth = 0;
+    }
+
+    public int getIndentStep()
+    {
+        return indentStep;
+    }
+
+    public void setIndentStep(int indentStep)
+    {
+        this.indentStep = indentStep;
+    }
+
+    public void reset()
+    {
+        depth = 0;
+        state = SEEN_NOTHING;
+        stateStack = new Stack();
+        super.reset();
+    }
+
+    public void startElement(String uri, String localName, String qName, Attributes atts)
+        throws SAXException
+    {
+        stateStack.push(SEEN_ELEMENT);
+        state = SEEN_NOTHING;
+        if(depth > 0)
+            super.characters("\n");
+        doIndent();
+        super.startElement(uri, localName, qName, atts);
+        depth++;
+    }
+
+    public void endElement(String uri, String localName, String qName)
+        throws SAXException
+    {
+        depth--;
+        if(state == SEEN_ELEMENT)
+        {
+            super.characters("\n");
+            doIndent();
+        }
+        super.endElement(uri, localName, qName);
+        state = stateStack.pop();
+    }
+
+    public void emptyElement(String uri, String localName, String qName, Attributes atts)
+        throws SAXException
+    {
+        state = SEEN_ELEMENT;
+        if(depth > 0)
+            super.characters("\n");
+        doIndent();
+        super.emptyElement(uri, localName, qName, atts);
+    }
+
+    public void characters(char ch[], int start, int length)
+        throws SAXException
+    {
+        state = SEEN_DATA;
+        super.characters(ch, start, length);
+    }
+
+    private void doIndent()
+        throws SAXException
+    {
+        if(indentStep > 0 && depth > 0)
+        {
+            int n = indentStep * depth;
+            char ch[] = new char[n];
+            for(int i = 0; i < n; i++)
+                ch[i] = ' ';
+
+            characters(ch, 0, n);
+        }
+    }
+
+    private static final Object SEEN_NOTHING = new Object();
+    private static final Object SEEN_ELEMENT = new Object();
+    private static final Object SEEN_DATA = new Object();
+    private Object state;
+    private Stack stateStack;
+    private int indentStep;
+    private int depth;
+
+}

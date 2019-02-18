@@ -1,0 +1,609 @@
+#ifndef ENHANCER_PARAM
+#define ENHANCER_PARAM
+#include <stdio.h>
+#include <iostream>
+#include <stdlib.h>
+#include <fstream>
+#include <cctype>
+#include <string>
+#include <vector>
+#include <stdbool.h>
+#include <algorithm>
+#include <map>
+#include <boost/regex.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/iterator.hpp>
+
+#include <EnhancerDefines.h>
+
+using namespace std ;
+using namespace boost ;
+
+
+class PatternClass  {
+
+  public :
+    
+    PatternClass() 
+    {
+      NumberofForward = 0 ;
+      NumberofReverse = 0 ;
+      Overlap = true ;
+    } 
+  
+  void SetPattern (char * pat) 
+    {
+      int count ;
+      OriginalPattern = pat ;
+      reversePattern() ;
+      TranslateToRegex(OriginalPattern, RegEx) ;
+      TranslateToRegex(ReversePattern, ReverseRegEx) ;
+      
+    }
+
+  void TranslateToRegex (string &source, string & destination)  ;
+
+  const char *GetPattern ()
+    {
+      return OriginalPattern.c_str() ;
+    }
+
+  const char *GetRevPattern ()
+    {
+      return ReversePattern.c_str() ;
+    }
+
+  const char *GetRegEx ()
+    {
+      return RegEx.c_str() ;
+    }
+
+  const char *GetRevRegEx ()
+    {
+      return ReverseRegEx.c_str() ;
+    }
+
+  void SetPatternName (char ch) 
+    {
+      PatternName = ch ;
+    }
+
+  char GetPatternName ()
+    {
+      return PatternName ;
+    }
+
+  void SetNumberofForward (int value)
+    {
+      NumberofForward = value ;
+    }
+
+  int GetNumberofForward ()
+    {
+      return NumberofForward ;
+    }
+
+  int GetNumberofReverse ()
+    {
+      return NumberofReverse ;
+    }
+
+  void SetNumberofReverse (int value)
+    {
+      NumberofReverse = value ;
+    }
+
+  void reversePattern () ;
+
+  bool GetOverlap ()
+    {
+      return Overlap ;
+    }
+
+  void SetOverlap (bool Value)
+    {
+      Overlap = Value ;
+    }
+
+  void SetUserPatternName (char *name)
+    {
+      UserPatternName = name ;
+    }
+
+  const char * GetUserPatternName ()
+    {
+      return UserPatternName.c_str() ;
+    }
+
+  private :
+    char PatternName ;
+    string UserPatternName ;
+    string OriginalPattern  ;
+    string ReversePattern ;
+    string RegEx ;
+    string ReverseRegEx ;
+    bool Overlap ;
+    int NumberofForward ;
+    int NumberofReverse ;
+} ;
+
+class EnhancerParam {
+
+  public :
+    EnhancerParam () 
+    {
+      int Count ;
+
+      for(Count = 0 ; Count < MAX_EXPRESSIONS ; Count++)
+	{
+	  NoOverLapLists[Count] = true ;
+	}
+      memset (NoOverLapString, '\0', MAX_EXPRESSIONS+1) ;
+      strcpy (NoOverLapString, "ABCDEFGHIJ") ;
+      User = "nobody" ;
+      SaveFileName = "default" ;
+      PrecedenceCount = 0 ;
+      strcpy (SearchName, "default") ;
+    } 
+
+  ~EnhancerParam() ;
+  
+  void SetDirectoryName (char *name) 
+    {
+      DirectoryName = name ;
+    }
+
+
+  const char *GetDirectoryName ()
+    {
+      return (DirectoryName.c_str()) ;
+    }
+
+  void SetOrganismName (char *name) 
+    {
+      OrganismName = name ;
+    }
+
+  const char *GetOrganismName ()
+    {
+      return (OrganismName.c_str()) ;
+    }
+
+  void SetSessionName (char *name) 
+    {
+     SessionName = name ;
+    }
+
+  const char *GetSessionName ()
+    {
+      return (SessionName.c_str()) ;
+    }
+
+  void SetPrecedence (char *precedence) 
+    {
+      char *comma ;
+      vector <string> letter ;
+      char ExpBuffer [300] ;
+      int CurrentPosition = 0 ;
+      int ExprCount, StrRevCount ;
+      int PosCount ;
+      PrecedenceCount = 0 ;
+      char buf[2] ;
+      string precedencexmlstring ;
+
+      for (int i = 0 ; i < strlen(precedence) ; i++)
+	{
+	  if (precedence[i] == '<') 
+	    {
+	      precedencexmlstring.append('&lt;') ;
+	    }
+	  else if (precedence[i] == '>')
+	    {
+	      precedencexmlstring.append('&gt;') ;
+	    }
+	  else
+	    {
+	      precedencexmlstring.append(precedence[i]) ;
+	    }
+	}
+
+      buf[1] = '\0' ;
+      
+      comma = strchr (precedence, ',') ;
+      while (comma)
+	{
+	  memset (ExpBuffer, '\0', 300) ;
+	  strncpy(ExpBuffer, precedence + CurrentPosition, comma - precedence - CurrentPosition) ;
+	  PosCount = 0 ;
+	  while (PosCount < strlen(ExpBuffer))
+	    {
+	      if (ExpBuffer[PosCount] == '*')
+		{
+		  string valueletter = ".*" ;
+		  letter.push_back (valueletter) ;
+		  PosCount++ ;
+		}
+	      if ((ExpBuffer [PosCount] >= 'A')  && (ExpBuffer [PosCount] <= 'J'))
+		{
+		  buf [0] = ExpBuffer[PosCount++] ;
+		  string valueletter = buf ;
+		  buf[0] = ExpBuffer[PosCount++] ;
+		  valueletter += buf ;
+		  letter.push_back (valueletter) ;
+		}
+	      if (ExpBuffer [PosCount] == '(')
+		{
+		  PosCount++ ;
+		  string regex = "(" ;
+		  buf[0] = ExpBuffer[PosCount] ;
+		  regex += buf ;
+		  PosCount++ ;
+		  while (ExpBuffer [PosCount] != ')') 
+		    {
+		      regex += "|" ;
+		      buf[0] = ExpBuffer[PosCount] ;
+		      regex += buf ;
+		      PosCount++ ;
+		    }
+		  regex += ")" ;
+		  buf[0] = ExpBuffer[++PosCount] ;
+		  regex += buf ;
+		  letter.push_back (regex) ;
+		  PosCount++ ;
+		}
+	    }
+
+	  string PatternExpr ;
+	  PatternExpr = "" ;
+	  for (ExprCount = 0 ; ExprCount < letter.size() ; ExprCount++)
+	    {
+	      PatternExpr += letter[ExprCount] ;
+	    }
+	  strcpy(Precedence[PrecedenceCount], PatternExpr.c_str()) ;
+
+	  PatternExpr = "" ;
+	  for (ExprCount = letter.size() - 1 ; ExprCount >= 0 ; ExprCount--)
+	    {
+	      PatternExpr += letter[ExprCount] ;
+	    }
+
+	  strcpy (PrecedenceRev[PrecedenceCount], PatternExpr.c_str()) ;
+	  letter.erase (letter.begin(), letter.end()) ;
+	  CurrentPosition = comma - precedence + 1 ;
+  	  // cout << Precedence[PrecedenceCount] << "forward " << endl ;
+	  //	  cout << PrecedenceRev[PrecedenceCount] << "reverse " << endl ;
+	  comma = strchr (precedence+CurrentPosition, ',') ;
+	  PrecedenceCount++ ;
+	}
+    }
+
+  void SetGeneNames (char *name) 
+    {
+      GeneNames = name ;
+    }
+
+  const char *GetGeneNames ()
+    {
+      return (GeneNames.c_str()) ;
+    }
+
+  void SetChName (char *name) 
+    {
+      ChName = name ;
+    }
+
+  const char *GetChName ()
+    {
+      return (ChName.c_str()) ;
+    }
+
+  void SetWidthConstraint (int value) 
+    {
+      WidthConstraint = value ;
+    }
+  
+  int GetWidthConstraint () 
+    {
+      return WidthConstraint ;
+    }
+
+  void SetMax (int value)
+    {
+      MaxDistance = value ;
+    }
+
+  int GetMax ()
+    {
+      return MaxDistance ;
+    }
+
+  void SetMin (int value)
+    {
+      MinDistance = value ;
+    }
+
+  int GetMin ()
+    {
+      return MinDistance ;
+    }
+
+  void SetNumberofBindingSites (int value)
+    {
+      NumberofBindingSites = value ;
+    }
+  
+  int GetNumberofBindingSites ()
+    {
+      return NumberofBindingSites ;
+    }
+
+  void SetSave (char *user, char *filename)
+    {
+      User = user ;
+      SaveFileName = filename ;
+      if (strlen (filename) != 0)
+	{
+	  strcpy (SearchName, filename) ;
+	}
+    }
+
+  void SetConditionConstraint (char *value)
+    {
+
+      string::size_type pos ;
+
+      ConditionConstraint = value ;
+      OriginalConditionConstraint = value ;
+      if (strlen(value) == 0) return ;
+      pos = ConditionConstraint.find(" ", 0) ;
+      while (pos != string::npos)
+	{
+	  ConditionConstraint.replace(pos, 1, "") ;
+	  pos = ConditionConstraint.find(" ", 0) ;
+	}
+
+      for (int count = 0 ; count < ConditionConstraint.length() ; count++)
+	{
+	  ConditionConstraint[count] = toupper(ConditionConstraint[count]) ;
+	}
+
+      pos = ConditionConstraint.find("AND", 0) ;
+      while (pos != string::npos)
+	{
+	  ConditionConstraint.replace(pos, 3, "&") ;
+	  pos = ConditionConstraint.find("AND", 0) ;
+	}
+      pos = ConditionConstraint.find("OR", 0) ;
+      while (pos != string::npos)
+	{
+	  ConditionConstraint.replace(pos, 2, "|") ;
+	  pos = ConditionConstraint.find("OR", 0) ;
+	}
+      pos = ConditionConstraint.find("NOT", 0) ;
+      while (pos != string::npos)
+	{
+	  ConditionConstraint.replace(pos, 2, "!") ;
+	  pos = ConditionConstraint.find("NOT", 0) ;
+	}
+
+      pos = ConditionConstraint.find_first_of("ABCDEFGHIJ", 0) ;
+      while (pos != string::npos)
+	{
+	  if ((pos == 0)  || (isdigit(ConditionConstraint[pos-1])== 0))
+	    {
+	      if (!isdigit (ConditionConstraint[pos-2]))
+		ConditionConstraint.insert(pos, "1") ;
+	      else
+		{
+		  char ch = ConditionConstraint[pos-2] ;
+		  ConditionConstraint[pos-2] = ConditionConstraint[pos-1] ;
+		  ConditionConstraint[pos-1] = ch ;
+		}
+	      pos++ ;
+	      while (isalpha (ConditionConstraint[pos]))
+		pos++ ;
+	    }
+	  else
+	    {
+	      if (isdigit(ConditionConstraint[pos-1]))
+		{
+		  while (isalpha (ConditionConstraint[pos]))
+		    pos++ ;
+		}
+	      else		  
+		pos++ ;
+	    }
+	  pos = ConditionConstraint.find_first_of("ABCDEFGHIJ", pos) ;
+	}
+      ConditionConstraint.insert(0, "(") ;
+      ConditionConstraint.insert(ConditionConstraint.length(), ")") ;
+    }
+
+  char *GetSearchName ()
+    {
+      return SearchName ;
+    }
+
+  char * GetConditionConstraint ()
+    {
+      return ((char *) ConditionConstraint.c_str()) ;
+    }
+
+  char * GetOriginalConditionConstraint ()
+    {
+      return ((char *) OriginalConditionConstraint.c_str()) ;
+    }
+
+
+  void SetDirection (char ch) 
+    {
+      Direction = ch ;
+    }
+
+  char GetDirection ()
+    {
+      return Direction ;
+    }
+
+  vector <PatternClass *> & GetPatternLists ()
+    {
+      return PatternLists ;
+    }
+
+  void SetRecalculate (bool value)
+    {
+      Recalculate = value ;
+    }
+
+  bool GetRecalculate ()
+    {
+      return Recalculate ;
+    }
+
+  void SetAnyGene (bool value)
+    {
+      AnyGene = value ;
+    }
+
+  bool GetAnyGene ()
+    {
+      return AnyGene ;
+    }
+
+  int GetDisplay ()
+    {
+      return Display ;
+    }
+
+  char * GetUser ()
+    {
+      return (char *) User.c_str() ;
+    }
+
+   void SetNoOverLapString (char *Value) 
+    {
+      strcpy (NoOverLapString, Value) ;
+      SetNoOverLapLists() ;
+    }
+
+  bool GetNoOverLapValue (char ch)
+    {
+      return (NoOverLapLists[(int) ch - 0x41]) ;
+    }
+
+  char *GetNoOverLapString ()
+    {
+      return NoOverLapString ;
+    }
+
+  void SetNoOverLapLists ()
+    {
+      int NoOverLapCount = strlen(NoOverLapString) ;
+      char NewOverLap[15] ;
+      int New = 0 ;
+      for (int Count = 0 ; Count < NoOverLapCount ; Count++)
+	{
+	  NoOverLapLists [NoOverLapString[Count] - 0x41] = false ;
+	}
+      for (int Count = 0 ; Count < 10 ; Count++)
+	{
+	  if (NoOverLapLists[Count])
+	    {
+	      NewOverLap[New++] = (char) (Count + 0x41) ;
+	    }
+	}
+      NewOverLap[New] = '\0' ;
+      strcpy (NoOverLapString, NewOverLap) ;
+      
+	  
+    }
+
+  void SetDisplay (int Value)
+    {
+      Display = Value ;
+    }
+
+  char * GetSaveFileName()
+    {
+      return (char *) SaveFileName.c_str() ;
+    }
+
+  void SetSaveFileName ()
+    {
+      char dirname[] = "/home/cache/" ;
+      namespace fs = boost::filesystem;
+      string CompleteFileName ;
+      CompleteFileName = dirname  ;
+      CompleteFileName += GetUser()  ;
+      CompleteFileName += "/" ;
+      if (!fs::exists (CompleteFileName))
+	{
+	  boost::filesystem::create_directory(CompleteFileName) ;
+	}
+      CompleteFileName += GetSaveFileName() ;
+      CompleteFileName += "/" ;
+      if (!fs::exists (CompleteFileName))
+	{
+	  boost::filesystem::create_directory(CompleteFileName) ;
+	}
+      CompleteFileName += GetOrganismName() ;
+      CompleteFileName += "/" ;
+      if (!fs::exists (CompleteFileName))
+	{
+	  boost::filesystem::create_directory(CompleteFileName) ;
+	}
+      SaveFileName = CompleteFileName.c_str() ;
+    }
+
+  bool FindPrecedence (char *) ;
+  void ReadFile (char *) ;
+  bool CheckRegex (char *, char *) ;
+  void WriteConfigFile () ;
+
+  void InsertPatternName (char name, char *username)
+    {
+      vector<PatternClass *>::iterator it ;
+      for (it = PatternLists.begin() ; it != PatternLists.end() ; it++)
+	{
+	  if ((*it)->GetPatternName()  == name)
+	    {
+	      (*it)->SetUserPatternName(username) ;
+	      break ;
+	    }
+	}
+    }
+
+
+  private :
+    string User ;
+    string SaveFileName ;
+    string DirectoryName ;
+    char Precedence[20][300] ;
+    char PrecedenceRev[20][300] ;
+    bool AnyGene ;
+    vector <PatternClass *> PatternLists;
+    char NoOverLapString [MAX_EXPRESSIONS+1] ;
+    int WidthConstraint ;
+    int NumberofBindingSites ;
+    string ConditionConstraint ;
+    string OriginalConditionConstraint ;
+    string ChName ;
+    string OrganismName ;
+    bool Recalculate ;
+    bool NoOverLapLists [MAX_EXPRESSIONS] ;
+    char SearchName[200] ;
+    string SessionName ;
+    int Display ;
+    char Direction ;
+    string GeneNames ;
+    int PrecedenceCount ;
+    int MinDistance ;
+    int MaxDistance ;
+    string precedencexmlstring ;
+  
+} ;
+
+#endif
+

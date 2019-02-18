@@ -1,0 +1,931 @@
+// Decompiled by Jad v1.5.8e. Copyright 2001 Pavel Kouznetsov.
+// Jad home page: http://www.geocities.com/kpdus/jad.html
+// Decompiler options: packimports(3) 
+// Source File Name:   SockIOPool.java
+
+package com.danga.MemCached;
+
+import java.io.*;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.*;
+import java.util.zip.CRC32;
+import org.apache.log4j.Category;
+import org.apache.log4j.Logger;
+
+public class SockIOPool
+{
+    public static class SockIO
+    {
+
+        String getHost()
+        {
+            return host;
+        }
+
+        void trueClose()
+            throws IOException
+        {
+            log.debug("++++ Closing socket for real: ".concat(String.valueOf(String.valueOf(toString()))));
+            boolean err = false;
+            StringBuffer errMsg = new StringBuffer();
+            if(in == null || out == null || sock == null)
+            {
+                err = true;
+                errMsg.append("++++ socket or its streams already null in trueClose call");
+            }
+            if(in != null)
+                try
+                {
+                    in.close();
+                }
+                catch(IOException ioe)
+                {
+                    log.error(String.valueOf(String.valueOf((new StringBuffer("++++ error closing input stream for socket: ")).append(toString()).append(" for host: ").append(getHost()))));
+                    log.error(ioe.getMessage(), ioe);
+                    errMsg.append(String.valueOf(String.valueOf((new StringBuffer("++++ error closing input stream for socket: ")).append(toString()).append(" for host: ").append(getHost()).append("\n"))));
+                    errMsg.append(ioe.getMessage());
+                    err = true;
+                }
+            if(out != null)
+                try
+                {
+                    out.close();
+                }
+                catch(IOException ioe)
+                {
+                    log.error(String.valueOf(String.valueOf((new StringBuffer("++++ error closing output stream for socket: ")).append(toString()).append(" for host: ").append(getHost()))));
+                    log.error(ioe.getMessage(), ioe);
+                    errMsg.append(String.valueOf(String.valueOf((new StringBuffer("++++ error closing output stream for socket: ")).append(toString()).append(" for host: ").append(getHost()).append("\n"))));
+                    errMsg.append(ioe.getMessage());
+                    err = true;
+                }
+            if(sock != null)
+                try
+                {
+                    sock.close();
+                }
+                catch(IOException ioe)
+                {
+                    log.error(String.valueOf(String.valueOf((new StringBuffer("++++ error closing socket: ")).append(toString()).append(" for host: ").append(getHost()))));
+                    log.error(ioe.getMessage(), ioe);
+                    errMsg.append(String.valueOf(String.valueOf((new StringBuffer("++++ error closing socket: ")).append(toString()).append(" for host: ").append(getHost()).append("\n"))));
+                    errMsg.append(ioe.getMessage());
+                    err = true;
+                }
+            if(sock != null)
+                SockIOPool.getInstance().checkIn(this, false);
+            in = null;
+            out = null;
+            sock = null;
+            if(err)
+                throw new IOException(errMsg.toString());
+            else
+                return;
+        }
+
+        void close()
+        {
+            log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ marking socket (")).append(toString()).append(") as closed and available to return to avail pool"))));
+            SockIOPool.getInstance().checkIn(this);
+        }
+
+        boolean isConnected()
+        {
+            return sock != null && sock.isConnected();
+        }
+
+        String readLine()
+            throws IOException
+        {
+            if(sock == null || !sock.isConnected())
+            {
+                log.error("++++ attempting to read from closed socket");
+                throw new IOException("++++ attempting to read from closed socket");
+            }
+            byte b[] = new byte[1];
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            boolean eol = false;
+            for(; in.read(b, 0, 1) != -1; bos.write(b, 0, 1))
+            {
+                if(b[0] == 13)
+                {
+                    eol = true;
+                    continue;
+                }
+                if(!eol)
+                    continue;
+                if(b[0] == 10)
+                    break;
+                eol = false;
+            }
+
+            if(bos == null || bos.size() <= 0)
+                throw new IOException("++++ Stream appears to be dead, so closing it down");
+            else
+                return bos.toString().trim();
+        }
+
+        void clearEOL()
+            throws IOException
+        {
+            if(sock == null || !sock.isConnected())
+            {
+                log.error("++++ attempting to read from closed socket");
+                throw new IOException("++++ attempting to read from closed socket");
+            }
+            byte b[] = new byte[1];
+            boolean eol = false;
+            do
+            {
+                if(in.read(b, 0, 1) == -1)
+                    break;
+                if(b[0] == 13)
+                {
+                    eol = true;
+                    continue;
+                }
+                if(!eol)
+                    continue;
+                if(b[0] == 10)
+                    break;
+                eol = false;
+            } while(true);
+        }
+
+        void read(byte b[])
+            throws IOException
+        {
+            if(sock == null || !sock.isConnected())
+            {
+                log.error("++++ attempting to read from closed socket");
+                throw new IOException("++++ attempting to read from closed socket");
+            }
+            int cnt;
+            for(int count = 0; count < b.length; count += cnt)
+                cnt = in.read(b, count, b.length - count);
+
+        }
+
+        void flush()
+            throws IOException
+        {
+            if(sock == null || !sock.isConnected())
+            {
+                log.error("++++ attempting to write to closed socket");
+                throw new IOException("++++ attempting to write to closed socket");
+            } else
+            {
+                out.flush();
+                return;
+            }
+        }
+
+        void write(byte b[])
+            throws IOException
+        {
+            if(sock == null || !sock.isConnected())
+            {
+                log.error("++++ attempting to write to closed socket");
+                throw new IOException("++++ attempting to write to closed socket");
+            } else
+            {
+                out.write(b);
+                return;
+            }
+        }
+
+        public int hashCode()
+        {
+            return sock != null ? sock.hashCode() : 0;
+        }
+
+        public String toString()
+        {
+            return sock != null ? sock.toString() : "";
+        }
+
+        private static Logger log;
+        private String host;
+        private Socket sock;
+        private DataInputStream in;
+        private BufferedOutputStream out;
+
+        static 
+        {
+            log = Logger.getLogger((SockIOPool.class$com$danga$MemCached$SockIOPool$SockIO != null ? SockIOPool.class$com$danga$MemCached$SockIOPool$SockIO : (SockIOPool.class$com$danga$MemCached$SockIOPool$SockIO = SockIOPool._mthclass$("com.danga.MemCached.SockIOPool$SockIO"))).getName());
+        }
+
+        SockIO(String host, int port, int timeout, boolean noDelay)
+            throws UnknownHostException, IOException
+        {
+            sock = new Socket(host, port);
+            if(timeout >= 0)
+                sock.setSoTimeout(timeout);
+            sock.setTcpNoDelay(noDelay);
+            in = new DataInputStream(sock.getInputStream());
+            out = new BufferedOutputStream(sock.getOutputStream());
+            this.host = String.valueOf(String.valueOf((new StringBuffer(String.valueOf(String.valueOf(host)))).append(":").append(port)));
+        }
+
+        SockIO(String host, int timeout, boolean noDelay)
+            throws UnknownHostException, IOException
+        {
+            String ip[] = host.split(":");
+            sock = new Socket(ip[0], Integer.parseInt(ip[1]));
+            if(timeout >= 0)
+                sock.setSoTimeout(timeout);
+            sock.setTcpNoDelay(noDelay);
+            in = new DataInputStream(sock.getInputStream());
+            out = new BufferedOutputStream(sock.getOutputStream());
+            this.host = host;
+        }
+    }
+
+    private static class MaintThread extends Thread
+    {
+
+        public static synchronized MaintThread getInstance()
+        {
+            if(thread == null)
+                thread = new MaintThread();
+            return thread;
+        }
+
+        public void setInterval(long interval)
+        {
+            this.interval = interval;
+        }
+
+        public void stopThread()
+        {
+            stopThread = true;
+            interrupt();
+        }
+
+        public void run()
+        {
+            do
+            {
+                if(stopThread)
+                    break;
+                try
+                {
+                    Thread.sleep(interval);
+                    SockIOPool poolObj = SockIOPool.getInstance();
+                    if(poolObj.isInitialized())
+                        poolObj.selfMaint();
+                    continue;
+                }
+                catch(Exception e) { }
+                break;
+            } while(true);
+        }
+
+        private long interval;
+        private boolean stopThread;
+        private static MaintThread thread = null;
+
+
+        private MaintThread()
+        {
+            interval = 3000L;
+            stopThread = false;
+        }
+    }
+
+
+    protected SockIOPool()
+    {
+        initialized = false;
+        maintThreadRunning = false;
+        maxCreate = 1;
+        initConn = 3;
+        minConn = 3;
+        maxConn = 10;
+        maxIdle = 0x2bf20L;
+        maintSleep = 5000L;
+        socketTO = 10000;
+        failover = true;
+        nagle = true;
+        hashingAlg = 0;
+    }
+
+    public static SockIOPool getInstance()
+    {
+        return instance;
+    }
+
+    public void setServers(String servers[])
+    {
+        this.servers = servers;
+    }
+
+    public String[] getServers()
+    {
+        return servers;
+    }
+
+    public void setWeights(Integer weights[])
+    {
+        this.weights = weights;
+    }
+
+    public Integer[] getWeights()
+    {
+        return weights;
+    }
+
+    public void setInitConn(int initConn)
+    {
+        this.initConn = initConn;
+    }
+
+    public int getInitConn()
+    {
+        return initConn;
+    }
+
+    public void setMinConn(int minConn)
+    {
+        this.minConn = minConn;
+    }
+
+    public int getMinConn()
+    {
+        return minConn;
+    }
+
+    public void setMaxConn(int maxConn)
+    {
+        this.maxConn = maxConn;
+    }
+
+    public int getMaxConn()
+    {
+        return maxConn;
+    }
+
+    public void setMaxIdle(long maxIdle)
+    {
+        this.maxIdle = maxIdle;
+    }
+
+    public long getMaxIdle()
+    {
+        return maxIdle;
+    }
+
+    public void setMaintSleep(long maintSleep)
+    {
+        this.maintSleep = maintSleep;
+    }
+
+    public long getMaintSleep()
+    {
+        return maintSleep;
+    }
+
+    public void setSocketTO(int socketTO)
+    {
+        this.socketTO = socketTO;
+    }
+
+    public int getSocketTO()
+    {
+        return socketTO;
+    }
+
+    public void setFailover(boolean failover)
+    {
+        this.failover = failover;
+    }
+
+    public boolean getFailover()
+    {
+        return failover;
+    }
+
+    public void setNagle(boolean nagle)
+    {
+        this.nagle = nagle;
+    }
+
+    public boolean getNagle()
+    {
+        return nagle;
+    }
+
+    public void setHashingAlg(int alg)
+    {
+        hashingAlg = alg;
+    }
+
+    public int getHashingAlg()
+    {
+        return hashingAlg;
+    }
+
+    public synchronized void initialize()
+    {
+        if(initialized && buckets != null && availPool != null && busyPool != null)
+        {
+            log.error("++++ trying to initialize and already initialized pool");
+            return;
+        }
+        buckets = new ArrayList();
+        availPool = new Hashtable(servers.length * initConn);
+        busyPool = new Hashtable(servers.length * initConn);
+        hostDeadDur = new Hashtable();
+        hostDead = new Hashtable();
+        createShift = new Hashtable();
+        maxCreate = minConn / 4;
+        log.info("++++ initializing pool with following settings:");
+        log.info("++++ initial size: ".concat(String.valueOf(String.valueOf(initConn))));
+        log.info("++++ min spare   : ".concat(String.valueOf(String.valueOf(minConn))));
+        log.info("++++ max spare   : ".concat(String.valueOf(String.valueOf(maxConn))));
+        if(servers == null || servers.length <= 0)
+        {
+            log.error("++++ trying to initialize with no servers");
+            throw new IllegalStateException("++++ trying to initialize with no servers");
+        }
+label0:
+        for(int i = 0; i < servers.length; i++)
+        {
+            if(weights != null && weights.length > i)
+            {
+                for(int k = 0; k < weights[i].intValue(); k++)
+                {
+                    buckets.add(servers[i]);
+                    log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ added ")).append(servers[i]).append(" to server bucket"))));
+                }
+
+            } else
+            {
+                buckets.add(servers[i]);
+                log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ added ")).append(servers[i]).append(" to server bucket"))));
+            }
+            log.debug(String.valueOf(String.valueOf((new StringBuffer("+++ creating initial connections (")).append(initConn).append(") for host: ").append(servers[i]))));
+            int j = 0;
+            do
+            {
+                if(j >= initConn)
+                    continue label0;
+                SockIO socket = createSocket(servers[i]);
+                if(socket == null)
+                    continue label0;
+                addSocketToPool(availPool, servers[i], socket);
+                log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ created and added socket: ")).append(socket.toString()).append(" for host ").append(servers[i]))));
+                j++;
+            } while(true);
+        }
+
+        initialized = true;
+        if(maintSleep > (long)0)
+            startMaintThread();
+    }
+
+    public boolean isInitialized()
+    {
+        return initialized;
+    }
+
+    private SockIO createSocket(String host)
+    {
+        SockIO socket = null;
+        if(hostDead.containsKey(host) && hostDeadDur.containsKey(host))
+        {
+            Date store = (Date)hostDead.get(host);
+            long expire = ((Long)hostDeadDur.get(host)).longValue();
+            if(store.getTime() + expire > System.currentTimeMillis())
+                return null;
+        }
+        try
+        {
+            socket = new SockIO(host, socketTO, nagle);
+            if(!socket.isConnected())
+            {
+                log.error(String.valueOf(String.valueOf((new StringBuffer("++++ failed to get SockIO obj for: ")).append(host).append(" -- new socket is not connected"))));
+                try
+                {
+                    socket.trueClose();
+                }
+                catch(Exception ex)
+                {
+                    log.error("++++ failed to close SockIO obj for server: ".concat(String.valueOf(String.valueOf(host))));
+                    log.error(ex.getMessage(), ex);
+                    socket = null;
+                }
+            }
+        }
+        catch(Exception ex)
+        {
+            log.error("++++ failed to get SockIO obj for: ".concat(String.valueOf(String.valueOf(host))));
+            log.error(ex.getMessage(), ex);
+        }
+        if(socket == null)
+        {
+            Date now = new Date();
+            hostDead.put(host, now);
+            long expire = hostDeadDur.containsKey(host) ? ((Long)hostDeadDur.get(host)).longValue() * (long)2 : 1000L;
+            hostDeadDur.put(host, new Long(expire));
+            log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ ignoring dead host: ")).append(host).append(" for ").append(expire).append(" ms"))));
+            clearHostFromPool(availPool, host);
+        } else
+        {
+            log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ created socket (")).append(socket.toString()).append(") for host: ").append(host))));
+            hostDead.remove(host);
+            hostDeadDur.remove(host);
+        }
+        return socket;
+    }
+
+    public SockIO getSock(String key)
+    {
+        return getSock(key, null);
+    }
+
+    public SockIO getSock(String key, Integer hashCode)
+    {
+        log.info(String.valueOf(String.valueOf((new StringBuffer("cache socket pick ")).append(key).append(" ").append(hashCode))));
+        if(!initialized)
+        {
+            log.error("attempting to get SockIO from uninitialized pool!");
+            return null;
+        }
+        if(buckets.size() == 0)
+            return null;
+        if(buckets.size() == 1)
+            return getConnection((String)buckets.get(0));
+        int tries = 0;
+        int hv;
+        if(hashCode != null)
+            hv = hashCode.intValue();
+        else
+            switch(hashingAlg)
+            {
+            case 0: // '\0'
+                hv = key.hashCode();
+                break;
+
+            case 1: // '\001'
+                hv = origCompatHashingAlg(key);
+                break;
+
+            case 2: // '\002'
+                hv = newCompatHashingAlg(key);
+                break;
+
+            default:
+                hv = 0;
+                break;
+            }
+        for(int bucketSize = buckets.size(); tries++ < bucketSize;)
+        {
+            int bucket = hv % bucketSize;
+            if(bucket < 0)
+                bucket += bucketSize;
+            SockIO sock = getConnection((String)buckets.get(bucket));
+            log.info(String.valueOf(String.valueOf((new StringBuffer("cache choose ")).append(buckets.get(bucket)).append(" for ").append(key))));
+            if(sock != null)
+                return sock;
+            if(!failover)
+                return null;
+            hv += String.valueOf(String.valueOf((new StringBuffer("")).append(hv).append(tries))).hashCode();
+        }
+
+        return null;
+    }
+
+    private static int origCompatHashingAlg(String key)
+    {
+        int hash = 0;
+        char cArr[] = key.toCharArray();
+        for(int i = 0; i < cArr.length; i++)
+            hash = hash * 33 + cArr[i];
+
+        return hash;
+    }
+
+    private static int newCompatHashingAlg(String key)
+    {
+        CRC32 checksum = new CRC32();
+        checksum.update(key.getBytes());
+        int crc = (int)checksum.getValue();
+        return crc >> 16 & 0x7fff;
+    }
+
+    public synchronized SockIO getConnection(String host)
+    {
+        if(!initialized)
+        {
+            log.error("attempting to get SockIO from uninitialized pool!");
+            return null;
+        }
+        if(host == null)
+            return null;
+        if(availPool != null && !availPool.isEmpty())
+        {
+            Map aSockets = (Map)availPool.get(host);
+            if(aSockets != null && !aSockets.isEmpty())
+            {
+                for(Iterator i = aSockets.keySet().iterator(); i.hasNext(); i.remove())
+                {
+                    SockIO socket = (SockIO)i.next();
+                    if(socket.isConnected())
+                    {
+                        log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ moving socket for host (")).append(host).append(") to busy pool ... socket: ").append(socket))));
+                        i.remove();
+                        addSocketToPool(busyPool, host, socket);
+                        return socket;
+                    }
+                    log.error(String.valueOf(String.valueOf((new StringBuffer("++++ socket in avail pool is not connected: ")).append(socket.toString()).append(" for host: ").append(host))));
+                    socket = null;
+                }
+
+            }
+        }
+        Integer cShift = (Integer)createShift.get(host);
+        int shift = cShift == null ? 0 : cShift.intValue();
+        int create = 1 << shift;
+        if(create >= maxCreate)
+            create = maxCreate;
+        else
+            shift++;
+        createShift.put(host, new Integer(shift));
+        log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ creating ")).append(create).append(" new SockIO objects"))));
+        int i = create;
+        do
+        {
+            if(i <= 0)
+                break;
+            SockIO socket = createSocket(host);
+            if(socket == null)
+                break;
+            if(i == 0)
+            {
+                addSocketToPool(busyPool, host, socket);
+                return socket;
+            }
+            addSocketToPool(availPool, host, socket);
+            i--;
+        } while(true);
+        return null;
+    }
+
+    private synchronized void addSocketToPool(Map pool, String host, SockIO socket)
+    {
+        Map sockets;
+        if(pool.containsKey(host))
+        {
+            sockets = (Map)pool.get(host);
+            if(sockets != null)
+            {
+                sockets.put(socket, new Long(System.currentTimeMillis()));
+                return;
+            }
+        }
+        sockets = new Hashtable();
+        sockets.put(socket, new Long(System.currentTimeMillis()));
+        pool.put(host, sockets);
+    }
+
+    private synchronized void removeSocketFromPool(Map pool, String host, SockIO socket)
+    {
+        if(pool.containsKey(host))
+        {
+            Map sockets = (Map)pool.get(host);
+            if(sockets != null)
+                sockets.remove(socket);
+        }
+    }
+
+    private synchronized void clearHostFromPool(Map pool, String host)
+    {
+        if(pool.containsKey(host))
+        {
+            Map sockets = (Map)pool.get(host);
+            if(sockets != null && sockets.size() > 0)
+            {
+                for(Iterator i = sockets.keySet().iterator(); i.hasNext();)
+                {
+                    SockIO socket = (SockIO)i.next();
+                    try
+                    {
+                        socket.trueClose();
+                    }
+                    catch(IOException ioe)
+                    {
+                        log.error("++++ failed to close socket: ".concat(String.valueOf(String.valueOf(ioe.getMessage()))));
+                    }
+                    i.remove();
+                    socket = null;
+                }
+
+            }
+        }
+    }
+
+    public synchronized void checkIn(SockIO socket, boolean addToAvail)
+    {
+        String host = socket.getHost();
+        log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ calling check-in on socket: ")).append(socket.toString()).append(" for host: ").append(host))));
+        log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ removing socket (")).append(socket.toString()).append(") from busy pool for host: ").append(host))));
+        removeSocketFromPool(busyPool, host, socket);
+        if(addToAvail && socket.isConnected())
+        {
+            log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ returning socket (")).append(socket.toString()).append(" to avail pool for host: ").append(host))));
+            addSocketToPool(availPool, host, socket);
+        }
+    }
+
+    public synchronized void checkIn(SockIO socket)
+    {
+        checkIn(socket, true);
+    }
+
+    private void closePool(Map pool)
+    {
+        for(Iterator i = pool.keySet().iterator(); i.hasNext();)
+        {
+            String host = (String)i.next();
+            Map sockets = (Map)pool.get(host);
+            Iterator j = sockets.keySet().iterator();
+            while(j.hasNext()) 
+            {
+                SockIO socket = (SockIO)j.next();
+                try
+                {
+                    socket.trueClose();
+                }
+                catch(IOException ioe)
+                {
+                    log.error(String.valueOf(String.valueOf((new StringBuffer("++++ failed to trueClose socket: ")).append(socket.toString()).append(" for host: ").append(host))));
+                }
+                j.remove();
+                socket = null;
+            }
+        }
+
+    }
+
+    public synchronized void shutDown()
+    {
+        log.info("++++ SockIOPool shutting down...");
+        if(maintThreadRunning)
+            stopMaintThread();
+        log.info("++++ closing all internal pools.");
+        closePool(availPool);
+        closePool(busyPool);
+        availPool = null;
+        busyPool = null;
+        buckets = null;
+        hostDeadDur = null;
+        hostDead = null;
+        initialized = false;
+        log.info("++++ SockIOPool finished shutting down.");
+    }
+
+    private synchronized void startMaintThread()
+    {
+        if(maintThreadRunning)
+        {
+            return;
+        } else
+        {
+            MaintThread t = MaintThread.getInstance();
+            t.setInterval(maintSleep);
+            t.start();
+            maintThreadRunning = true;
+            return;
+        }
+    }
+
+    private synchronized void stopMaintThread()
+    {
+        if(!maintThreadRunning)
+        {
+            log.error("++++ maint thread not running, so can't stop it");
+            return;
+        } else
+        {
+            MaintThread t = MaintThread.getInstance();
+            t.stopThread();
+            maintThreadRunning = false;
+            return;
+        }
+    }
+
+    private synchronized void selfMaint()
+    {
+        log.debug("++++ Starting self maintenance....");
+        String host;
+label0:
+        for(Iterator i = availPool.keySet().iterator(); i.hasNext(); createShift.put(host, new Integer(0)))
+        {
+            host = (String)i.next();
+            Map sockets = (Map)availPool.get(host);
+            Map bSockets = (Map)busyPool.get(host);
+            log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ Size of avail pool for host (")).append(host).append(") = ").append(sockets.size()))));
+            log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ Size of busy pool for host (")).append(host).append(") = ").append(bSockets.size()))));
+            if(sockets.size() < minConn)
+            {
+                int need = minConn - sockets.size();
+                log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ Need to create ")).append(need).append(" new sockets for pool for host: ").append(host))));
+                int j = 0;
+                do
+                {
+                    if(j >= need)
+                        continue label0;
+                    SockIO socket = createSocket(host);
+                    if(socket == null)
+                        continue label0;
+                    addSocketToPool(availPool, host, socket);
+                    j++;
+                } while(true);
+            }
+            if(sockets.size() <= maxConn)
+                continue;
+            int diff = sockets.size() - maxConn;
+            int needToClose = diff > 4 ? diff / 4 : diff;
+            log.debug(String.valueOf(String.valueOf((new StringBuffer("++++ need to remove ")).append(needToClose).append(" spare sockets for pool for host: ").append(host))));
+            Iterator j = sockets.keySet().iterator();
+            do
+            {
+                SockIO socket;
+                long expire;
+                do
+                {
+                    if(!j.hasNext() || needToClose <= 0)
+                        continue label0;
+                    socket = (SockIO)j.next();
+                    expire = ((Long)sockets.get(socket)).longValue();
+                } while(expire + maxIdle >= System.currentTimeMillis());
+                log.debug("+++ removing stale entry from pool as it is past its idle timeout and pool is over max spare");
+                try
+                {
+                    socket.trueClose();
+                }
+                catch(IOException ioe)
+                {
+                    log.error("failed to close socket");
+                    log.error(ioe.getMessage(), ioe);
+                }
+                j.remove();
+                socket = null;
+                needToClose--;
+            } while(true);
+        }
+
+        log.debug("+++ ending self maintenance.");
+    }
+
+    static Class _mthclass$(String x$0)
+    {
+        try
+        {
+            return Class.forName(x$0);
+        }
+        catch(ClassNotFoundException x$0)
+        {
+            throw new NoClassDefFoundError(x$0.getMessage());
+        }
+    }
+
+    private static Logger log;
+    private static SockIOPool instance = new SockIOPool();
+    public static final int NATIVE_HASH = 0;
+    public static final int OLD_COMPAT_HASH = 1;
+    public static final int NEW_COMPAT_HASH = 2;
+    private boolean initialized;
+    private boolean maintThreadRunning;
+    private int maxCreate;
+    private Map createShift;
+    private final int poolMultiplier = 4;
+    private int initConn;
+    private int minConn;
+    private int maxConn;
+    private long maxIdle;
+    private long maintSleep;
+    private int socketTO;
+    private boolean failover;
+    private boolean nagle;
+    private int hashingAlg;
+    private String servers[];
+    private Integer weights[];
+    private List buckets;
+    private Map hostDead;
+    private Map hostDeadDur;
+    private Map availPool;
+    private Map busyPool;
+    static Class class$com$danga$MemCached$SockIOPool$SockIO;
+
+    static 
+    {
+        log = Logger.getLogger((com.danga.MemCached.SockIOPool.class).getName());
+        NATIVE_HASH = 0;
+        OLD_COMPAT_HASH = 1;
+        NEW_COMPAT_HASH = 2;
+    }
+
+}
